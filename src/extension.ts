@@ -27,9 +27,19 @@ export function activate(context: vscode.ExtensionContext): void {
   const connectionTree = new ConnectionTreeProvider(connectionManager);
   const schemaExplorer = new SchemaExplorerProvider(connectionManager, sqlTemplates);
 
+  const connectionTreeView = vscode.window.createTreeView('ageConnections', {
+    treeDataProvider: connectionTree,
+  });
+  connectionTree.setTreeView(connectionTreeView);
+
+  const schemaTreeView = vscode.window.createTreeView('ageSchemaExplorer', {
+    treeDataProvider: schemaExplorer,
+  });
+  schemaExplorer.setTreeView(schemaTreeView);
+
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('ageConnections', connectionTree),
-    vscode.window.registerTreeDataProvider('ageSchemaExplorer', schemaExplorer),
+    connectionTreeView,
+    schemaTreeView,
   );
 
   // ── Status bar ───────────────────────────────────────────────────────

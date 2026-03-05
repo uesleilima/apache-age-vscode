@@ -39,12 +39,20 @@ export class SchemaExplorerProvider implements vscode.TreeDataProvider<SchemaTre
 
   private graphNodes = new Map<string, LabelInfo[]>();
   private graphEdges = new Map<string, LabelInfo[]>();
+  private treeView?: vscode.TreeView<SchemaTreeItem>;
 
   constructor(
     private readonly connectionManager: ConnectionManager,
     private readonly sqlTemplates: SqlTemplates,
   ) {
     connectionManager.onDidChangeActiveConnection(() => this.refresh());
+  }
+
+  /**
+   * Set the TreeView instance to enable programmatic reveal/expand.
+   */
+  setTreeView(treeView: vscode.TreeView<SchemaTreeItem>): void {
+    this.treeView = treeView;
   }
 
   async refresh(): Promise<void> {
@@ -69,10 +77,42 @@ export class SchemaExplorerProvider implements vscode.TreeDataProvider<SchemaTre
     }
 
     this._onDidChangeTreeData.fire(undefined);
+    await this.revealCategories();
+  }
+
+  /**
+   * Reveal and expand the category items (Nodes, Edges) after refresh.
+   */
+  private async revealCategories(): Promise<void> {
+    if (!this.treeView) return;
+
+    const categories = this.getCategoryItems();
+    for (const item of categories) {
+      try {
+        await this.treeView.reveal(item, { expand: true, focus: false, select: false });
+      } catch {
+        // Tree view may not be visible yet; safe to ignore
+      }
+    }
   }
 
   getTreeItem(element: SchemaTreeItem): vscode.TreeItem {
     return element;
+  }
+
+  getParent(element: SchemaTreeItem): SchemaTreeItem | undefined {
+    if (element.itemType === 'label' && element.graphName) {
+      // Determine parent category by checking if label is a node or edge
+      const nodes = this.graphNodes.get(element.graphName) ?? [];
+      const isNode = nodes.some(n => n.name === element.labelInfo?.name);
+      return new SchemaTreeItem(
+        isNode ? 'Nodes' : 'Edges',
+        vscode.TreeItemCollapsibleState.Expanded,
+        'category',
+        element.graphName,
+      );
+    }
+    return undefined;
   }
 
   getChildren(element?: SchemaTreeItem): SchemaTreeItem[] {

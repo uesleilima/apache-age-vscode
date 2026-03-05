@@ -27,19 +27,66 @@ class ConnectionTreeItem extends vscode.TreeItem {
 export class ConnectionTreeProvider implements vscode.TreeDataProvider<ConnectionTreeItem> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<ConnectionTreeItem | undefined>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+  private treeView?: vscode.TreeView<ConnectionTreeItem>;
 
   constructor(private readonly connectionManager: ConnectionManager) {
     // Refresh tree when connections change
     connectionManager.onDidChangeConnections(() => this.refresh());
-    connectionManager.onDidChangeActiveConnection(() => this.refresh());
+    connectionManager.onDidChangeActiveConnection(() => this.refreshAndRevealActive());
+  }
+
+  /**
+   * Set the TreeView instance to enable programmatic reveal/expand.
+   */
+  setTreeView(treeView: vscode.TreeView<ConnectionTreeItem>): void {
+    this.treeView = treeView;
   }
 
   refresh(): void {
     this._onDidChangeTreeData.fire(undefined);
   }
 
+  /**
+   * Refresh the tree and reveal the active connection item expanded.
+   */
+  private async refreshAndRevealActive(): Promise<void> {
+    this._onDidChangeTreeData.fire(undefined);
+
+    if (!this.treeView) return;
+
+    const activeId = this.connectionManager.activeId;
+    if (!activeId) return;
+
+    const profile = this.connectionManager.getProfiles().find(p => p.id === activeId);
+    if (!profile || !this.connectionManager.isConnected(profile.id)) return;
+
+    // Build the tree item that matches the active connected profile
+    const items = this.getRootItems();
+    const activeItem = items.find(item => item.profile?.id === activeId);
+    if (activeItem) {
+      try {
+        await this.treeView.reveal(activeItem, { expand: 2, focus: false, select: false });
+      } catch {
+        // Tree view may not be visible yet; safe to ignore
+      }
+    }
+  }
+
   getTreeItem(element: ConnectionTreeItem): vscode.TreeItem {
     return element;
+  }
+
+  getParent(element: ConnectionTreeItem): ConnectionTreeItem | undefined {
+    // Graph and info items have a parent connection item
+    if ((element.itemType === 'graph' || element.itemType === 'info') && element.profile) {
+      return new ConnectionTreeItem(
+        element.profile.name,
+        vscode.TreeItemCollapsibleState.Expanded,
+        element.profile,
+        'connection',
+      );
+    }
+    return undefined;
   }
 
   getChildren(element?: ConnectionTreeItem): ConnectionTreeItem[] {
