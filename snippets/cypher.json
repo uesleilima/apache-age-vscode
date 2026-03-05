@@ -1,0 +1,112 @@
+{
+  "Match all nodes": {
+    "prefix": "match",
+    "body": ["MATCH (${1:n})", "RETURN ${1:n}${2: LIMIT ${3:25}}"],
+    "description": "Basic MATCH and RETURN"
+  },
+  "Match with WHERE": {
+    "prefix": "matchw",
+    "body": ["MATCH (${1:n}:${2:Label})", "WHERE ${1:n}.${3:property} = ${4:value}", "RETURN ${1:n}"],
+    "description": "MATCH with WHERE clause"
+  },
+  "Match with relationship": {
+    "prefix": "matchr",
+    "body": ["MATCH (${1:a}:${2:Label1})-[${3:r}:${4:REL_TYPE}]->(${5:b}:${6:Label2})", "RETURN ${1:a}, ${3:r}, ${5:b}"],
+    "description": "MATCH with relationship pattern"
+  },
+  "Match variable-length path": {
+    "prefix": "matchp",
+    "body": ["MATCH path = (${1:a}:${2:Label1})-[*${3:1..3}]->(${4:b}:${5:Label2})", "RETURN path"],
+    "description": "Variable-length path pattern"
+  },
+  "Optional Match": {
+    "prefix": "optmatch",
+    "body": ["MATCH (${1:n}:${2:Label})", "OPTIONAL MATCH (${1:n})-[${3:r}]->(${4:m})", "RETURN ${1:n}, ${3:r}, ${4:m}"],
+    "description": "OPTIONAL MATCH"
+  },
+  "Create node": {
+    "prefix": "create",
+    "body": ["CREATE (${1:n}:${2:Label} {${3:property}: ${4:value}})${5:", "RETURN ${1:n}}"],
+    "description": "CREATE a node"
+  },
+  "Create relationship": {
+    "prefix": "creater",
+    "body": ["MATCH (${1:a}:${2:Label1} {${3:prop}: ${4:val1}})", "MATCH (${5:b}:${6:Label2} {${7:prop}: ${8:val2}})", "CREATE (${1:a})-[:${9:REL_TYPE}]->(${5:b})"],
+    "description": "CREATE a relationship between existing nodes"
+  },
+  "Merge": {
+    "prefix": "merge",
+    "body": ["MERGE (${1:n}:${2:Label} {${3:prop}: ${4:val}})", "ON CREATE SET ${1:n}.${5:created} = timestamp()", "ON MATCH SET ${1:n}.${6:updated} = timestamp()", "RETURN ${1:n}"],
+    "description": "MERGE with ON CREATE / ON MATCH"
+  },
+  "Delete node": {
+    "prefix": "delete",
+    "body": ["MATCH (${1:n}:${2:Label} {${3:prop}: ${4:val}})", "DETACH DELETE ${1:n}"],
+    "description": "DETACH DELETE a node"
+  },
+  "Set property": {
+    "prefix": "set",
+    "body": ["MATCH (${1:n}:${2:Label} {${3:prop}: ${4:val}})", "SET ${1:n}.${5:newProp} = ${6:newVal}", "RETURN ${1:n}"],
+    "description": "SET a property on a node"
+  },
+  "Count aggregation": {
+    "prefix": "count",
+    "body": ["MATCH (${1:n}:${2:Label})", "RETURN count(${1:n}) AS ${3:total}"],
+    "description": "COUNT aggregation"
+  },
+  "Group by with count": {
+    "prefix": "groupby",
+    "body": ["MATCH (${1:n}:${2:Label})", "RETURN ${1:n}.${3:property}, count(*) AS ${4:cnt}", "ORDER BY ${4:cnt} DESC"],
+    "description": "GROUP BY with COUNT"
+  },
+  "Collect into list": {
+    "prefix": "collect",
+    "body": ["MATCH (${1:n}:${2:Label})", "RETURN collect(${1:n}.${3:property}) AS ${4:items}"],
+    "description": "COLLECT into a list"
+  },
+  "Shortest path": {
+    "prefix": "shortest",
+    "body": ["MATCH path = shortestPath((${1:a}:${2:Label1})-[*]-(${3:b}:${4:Label2}))", "RETURN path"],
+    "description": "Find shortest path"
+  },
+  "CASE expression": {
+    "prefix": "case",
+    "body": ["CASE ${1:n}.${2:property}", "  WHEN ${3:value1} THEN ${4:result1}", "  WHEN ${5:value2} THEN ${6:result2}", "  ELSE ${7:default}", "END AS ${8:alias}"],
+    "description": "CASE expression"
+  },
+  "EXPLAIN query": {
+    "prefix": "explain",
+    "body": ["EXPLAIN", "MATCH (${1:n}:${2:Label})", "RETURN ${1:n}"],
+    "description": "EXPLAIN a query"
+  },
+  "Pagination": {
+    "prefix": "page",
+    "body": ["MATCH (${1:n}:${2:Label})", "RETURN ${1:n}", "ORDER BY ${1:n}.${3:property}", "SKIP ${4:0} LIMIT ${5:25}"],
+    "description": "Pagination with SKIP and LIMIT"
+  },
+  "UNWIND list": {
+    "prefix": "unwind",
+    "body": ["UNWIND ${1:[1, 2, 3]} AS ${2:item}", "RETURN ${2:item}"],
+    "description": "UNWIND a list"
+  },
+  "WITH pipeline": {
+    "prefix": "with",
+    "body": ["MATCH (${1:n}:${2:Label})", "WITH ${1:n}, count(*) AS ${3:cnt}", "WHERE ${3:cnt} > ${4:1}", "RETURN ${1:n}, ${3:cnt}"],
+    "description": "WITH clause for query pipelining"
+  },
+  "AGE: Wrapped cypher query": {
+    "prefix": "age",
+    "body": ["SELECT * FROM cypher('${1:graph_name}', $$", "  MATCH (${2:n})", "  RETURN ${2:n}", "$$) as (${3:result} agtype);"],
+    "description": "Full AGE SQL-wrapped Cypher query"
+  },
+  "AGE: Create graph": {
+    "prefix": "agecreate",
+    "body": ["SELECT * FROM ag_catalog.create_graph('${1:graph_name}');"],
+    "description": "Create a new AGE graph"
+  },
+  "AGE: Drop graph": {
+    "prefix": "agedrop",
+    "body": ["SELECT * FROM ag_catalog.drop_graph('${1:graph_name}', true);"],
+    "description": "Drop an AGE graph"
+  }
+}

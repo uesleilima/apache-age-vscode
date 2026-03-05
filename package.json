@@ -1,0 +1,296 @@
+{
+  "name": "apache-age-vscode",
+  "displayName": "Apache AGE for VS Code",
+  "description": "Query Apache AGE graph databases with Cypher — syntax highlighting, query execution, graph visualization, and schema explorer",
+  "version": "0.1.0",
+  "publisher": "apache-age-community",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Database",
+    "Programming Languages",
+    "Visualization"
+  ],
+  "keywords": [
+    "apache age",
+    "cypher",
+    "graph database",
+    "postgresql",
+    "graph visualization"
+  ],
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apache-age-community/apache-age-vscode"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:cypher",
+    "onView:ageConnections",
+    "onView:ageSchemaExplorer"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "cypher",
+        "aliases": [
+          "Cypher",
+          "OpenCypher",
+          "cypher"
+        ],
+        "extensions": [
+          ".cypher",
+          ".cql",
+          ".age"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "cypher",
+        "scopeName": "source.cypher",
+        "path": "./syntaxes/cypher.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "cypher",
+        "path": "./snippets/cypher.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ageExplorer",
+          "title": "Apache AGE",
+          "icon": "media/age-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "ageExplorer": [
+        {
+          "id": "ageConnections",
+          "name": "Connections"
+        },
+        {
+          "id": "ageSchemaExplorer",
+          "name": "Schema Explorer"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "ageConnections",
+        "contents": "No connections configured.\n[Add Connection](command:apache-age.addConnection)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "apache-age.addConnection",
+        "title": "Add Connection",
+        "category": "Apache AGE",
+        "icon": "$(add)"
+      },
+      {
+        "command": "apache-age.editConnection",
+        "title": "Edit Connection",
+        "category": "Apache AGE",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "apache-age.removeConnection",
+        "title": "Remove Connection",
+        "category": "Apache AGE",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "apache-age.connect",
+        "title": "Connect",
+        "category": "Apache AGE",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "apache-age.disconnect",
+        "title": "Disconnect",
+        "category": "Apache AGE",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "apache-age.switchGraph",
+        "title": "Switch Graph",
+        "category": "Apache AGE",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "apache-age.runQuery",
+        "title": "Run Cypher Query",
+        "category": "Apache AGE",
+        "icon": "$(play)"
+      },
+      {
+        "command": "apache-age.runSelection",
+        "title": "Run Selected Cypher",
+        "category": "Apache AGE",
+        "icon": "$(play-circle)"
+      },
+      {
+        "command": "apache-age.explainQuery",
+        "title": "Explain Query",
+        "category": "Apache AGE",
+        "icon": "$(info)"
+      },
+      {
+        "command": "apache-age.refreshSchema",
+        "title": "Refresh Schema",
+        "category": "Apache AGE",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "apache-age.showGraphView",
+        "title": "Show Graph Visualization",
+        "category": "Apache AGE",
+        "icon": "$(type-hierarchy)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "apache-age.addConnection",
+          "when": "view == ageConnections",
+          "group": "navigation"
+        },
+        {
+          "command": "apache-age.refreshSchema",
+          "when": "view == ageSchemaExplorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "apache-age.connect",
+          "when": "view == ageConnections && viewItem == connectionDisconnected",
+          "group": "inline"
+        },
+        {
+          "command": "apache-age.disconnect",
+          "when": "view == ageConnections && viewItem == connectionConnected",
+          "group": "inline"
+        },
+        {
+          "command": "apache-age.editConnection",
+          "when": "view == ageConnections && viewItem =~ /^connection/",
+          "group": "1_manage"
+        },
+        {
+          "command": "apache-age.removeConnection",
+          "when": "view == ageConnections && viewItem =~ /^connection/",
+          "group": "1_manage"
+        },
+        {
+          "command": "apache-age.switchGraph",
+          "when": "view == ageConnections && viewItem == connectionConnected",
+          "group": "2_graph"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "apache-age.runQuery",
+          "when": "editorLangId == cypher",
+          "group": "ageQueries@1"
+        },
+        {
+          "command": "apache-age.runSelection",
+          "when": "editorLangId == cypher && editorHasSelection",
+          "group": "ageQueries@2"
+        },
+        {
+          "command": "apache-age.explainQuery",
+          "when": "editorLangId == cypher",
+          "group": "ageQueries@3"
+        }
+      ],
+      "editor/title/run": [
+        {
+          "command": "apache-age.runQuery",
+          "when": "editorLangId == cypher"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "apache-age.runQuery",
+        "key": "ctrl+enter",
+        "mac": "cmd+enter",
+        "when": "editorLangId == cypher"
+      },
+      {
+        "command": "apache-age.runSelection",
+        "key": "ctrl+shift+enter",
+        "mac": "cmd+shift+enter",
+        "when": "editorLangId == cypher && editorHasSelection"
+      }
+    ],
+    "configuration": {
+      "title": "Apache AGE",
+      "properties": {
+        "apache-age.defaultResultsLimit": {
+          "type": "number",
+          "default": 100,
+          "description": "Default LIMIT applied to generated queries from the schema explorer."
+        },
+        "apache-age.autoWrapCypher": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically wrap Cypher queries in SELECT * FROM cypher(...) SQL. Disable for raw SQL mode."
+        },
+        "apache-age.graphVisualization.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically show graph visualization when results contain nodes/edges."
+        },
+        "apache-age.graphVisualization.maxNodes": {
+          "type": "number",
+          "default": 500,
+          "description": "Maximum number of nodes to render before showing a warning."
+        },
+        "apache-age.pool.maxConnections": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum number of connections in the PostgreSQL connection pool."
+        },
+        "apache-age.pool.idleTimeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "description": "Time in milliseconds before an idle connection is closed."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:pg-native --format=cjs --platform=node --target=node18 --sourcemap",
+    "watch": "npm run build -- --watch",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "pg": "^8.13.0",
+    "pg-types": "^4.0.2",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.0",
+    "@types/uuid": "^9.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  }
+}

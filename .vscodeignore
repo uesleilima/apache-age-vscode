@@ -1,0 +1,9 @@
+dist/
+node_modules/
+*.vsix
+.vscode-test/
+out/
+src/
+test/
+tsconfig.json
+.gitignore

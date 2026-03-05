@@ -1,0 +1,243 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Cypher",
+  "scopeName": "source.cypher",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#operators" },
+    { "include": "#keywords" },
+    { "include": "#functions" },
+    { "include": "#labels" },
+    { "include": "#relationships" },
+    { "include": "#variables" },
+    { "include": "#parameters" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.cypher",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.cypher",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.cypher",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.cypher",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.double.cypher",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.cypher",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.cypher",
+          "match": "(?<![\\w$])\\d+\\.\\d+([eE][+-]?\\d+)?(?![\\w$])"
+        },
+        {
+          "name": "constant.numeric.integer.cypher",
+          "match": "(?<![\\w$])\\d+(?![\\w$.])"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.cypher",
+          "match": "<>|<=|>=|=~|<|>|="
+        },
+        {
+          "name": "keyword.operator.math.cypher",
+          "match": "\\+|-|\\*|/|%|\\^"
+        },
+        {
+          "name": "keyword.operator.logical.cypher",
+          "match": "\\b(?i:AND|OR|NOT|XOR|IS NULL|IS NOT NULL)\\b"
+        },
+        {
+          "name": "keyword.operator.string.cypher",
+          "match": "\\b(?i:STARTS WITH|ENDS WITH|CONTAINS|IN)\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.clause.cypher",
+          "match": "\\b(?i:MATCH|OPTIONAL MATCH|WHERE|RETURN|WITH|UNWIND|ORDER BY|SKIP|LIMIT|UNION|UNION ALL|CALL|YIELD)\\b"
+        },
+        {
+          "name": "keyword.control.write.cypher",
+          "match": "\\b(?i:CREATE|MERGE|SET|DELETE|DETACH DELETE|REMOVE|FOREACH)\\b"
+        },
+        {
+          "name": "keyword.control.subclause.cypher",
+          "match": "\\b(?i:ON CREATE SET|ON MATCH SET|ON CREATE|ON MATCH)\\b"
+        },
+        {
+          "name": "keyword.control.loading.cypher",
+          "match": "\\b(?i:LOAD CSV|FROM|AS|FIELDTERMINATOR|USING PERIODIC COMMIT)\\b"
+        },
+        {
+          "name": "keyword.control.schema.cypher",
+          "match": "\\b(?i:CREATE INDEX|DROP INDEX|CREATE CONSTRAINT|DROP CONSTRAINT|ASSERT|IS UNIQUE|EXISTS|NODE KEY)\\b"
+        },
+        {
+          "name": "keyword.control.hint.cypher",
+          "match": "\\b(?i:USING INDEX|USING SCAN|USING JOIN ON|EXPLAIN|PROFILE)\\b"
+        },
+        {
+          "name": "keyword.other.cypher",
+          "match": "\\b(?i:DISTINCT|AS|CASE|WHEN|THEN|ELSE|END|ALL|ANY|NONE|SINGLE|TRUE|FALSE|NULL|EXISTS|COUNT)\\b"
+        },
+        {
+          "name": "keyword.control.admin.cypher",
+          "match": "\\b(?i:CREATE GRAPH|DROP GRAPH|USE|SHOW|ALTER|GRANT|DENY|REVOKE)\\b"
+        },
+        {
+          "name": "storage.type.cypher",
+          "match": "\\b(?i:ASC|ASCENDING|DESC|DESCENDING|BY)\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "support.function.aggregation.cypher",
+          "match": "\\b(?i:count|sum|avg|min|max|collect|stDev|stDevP|percentileDisc|percentileCont)\\s*(?=\\()"
+        },
+        {
+          "name": "support.function.scalar.cypher",
+          "match": "\\b(?i:id|type|labels|keys|properties|length|size|head|last|tail|range|nodes|relationships|startNode|endNode|coalesce|timestamp|toInteger|toFloat|toString|toBoolean)\\s*(?=\\()"
+        },
+        {
+          "name": "support.function.string.cypher",
+          "match": "\\b(?i:trim|ltrim|rtrim|replace|substring|left|right|split|reverse|toLower|toUpper)\\s*(?=\\()"
+        },
+        {
+          "name": "support.function.math.cypher",
+          "match": "\\b(?i:abs|ceil|floor|round|sign|rand|log|log10|exp|sqrt|sin|cos|tan|asin|acos|atan|atan2|pi|e|degrees|radians|haversin)\\s*(?=\\()"
+        },
+        {
+          "name": "support.function.list.cypher",
+          "match": "\\b(?i:reduce|extract|filter|tail|range|reverse|sort)\\s*(?=\\()"
+        },
+        {
+          "name": "support.function.path.cypher",
+          "match": "\\b(?i:shortestPath|allShortestPaths)\\s*(?=\\()"
+        },
+        {
+          "name": "support.function.predicate.cypher",
+          "match": "\\b(?i:exists|all|any|none|single)\\s*(?=\\()"
+        },
+        {
+          "name": "support.function.age.cypher",
+          "match": "\\b(?i:age|ag_catalog|cypher|create_graph|drop_graph|create_vlabel|create_elabel|alter_graph|_label_name|_label_id|agtype_access_operator)\\s*(?=\\()"
+        }
+      ]
+    },
+    "labels": {
+      "patterns": [
+        {
+          "name": "entity.name.type.label.cypher",
+          "match": "(?<=:)\\s*[A-Za-z_][A-Za-z0-9_]*"
+        },
+        {
+          "name": "entity.name.type.label.multi.cypher",
+          "match": "(?<=:)[A-Za-z_][A-Za-z0-9_]*(:[A-Za-z_][A-Za-z0-9_]*)*"
+        }
+      ]
+    },
+    "relationships": {
+      "patterns": [
+        {
+          "name": "keyword.operator.relationship.cypher",
+          "match": "-\\[|\\]-|->"
+        },
+        {
+          "name": "keyword.operator.relationship.undirected.cypher",
+          "match": "<-|->|--"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.other.property.cypher",
+          "match": "(?<=\\.)[A-Za-z_][A-Za-z0-9_]*"
+        }
+      ]
+    },
+    "parameters": {
+      "patterns": [
+        {
+          "name": "variable.parameter.cypher",
+          "match": "\\$[A-Za-z_][A-Za-z0-9_]*"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.definition.node.begin.cypher",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.definition.node.end.cypher",
+          "match": "\\)"
+        },
+        {
+          "name": "punctuation.separator.cypher",
+          "match": ","
+        },
+        {
+          "name": "punctuation.terminator.cypher",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.definition.map.begin.cypher",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.definition.map.end.cypher",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.definition.list.begin.cypher",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.definition.list.end.cypher",
+          "match": "\\]"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Graph nodes -->
+  <circle cx="12" cy="5" r="2.5" fill="currentColor" opacity="0.8"/>
+  <circle cx="5" cy="17" r="2.5" fill="currentColor" opacity="0.6"/>
+  <circle cx="19" cy="17" r="2.5" fill="currentColor" opacity="0.6"/>
+  <!-- Edges -->
+  <line x1="10.2" y1="7" x2="6.5" y2="15"/>
+  <line x1="13.8" y1="7" x2="17.5" y2="15"/>
+  <line x1="7.5" y1="17" x2="16.5" y2="17"/>
+</svg>
