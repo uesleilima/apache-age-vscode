@@ -1,5 +1,19 @@
 # Apache AGE for VS Code
 
+<p align="center">
+	<img src="media/icon.png" alt="Apache AGE for VS Code icon" width="128" height="128" />
+</p>
+
+<p align="center"><strong>Official Marketplace Icon</strong></p>
+
+<p align="center">
+	<a href="https://github.com/uesleilima/apache-age-vscode/actions/workflows/ci.yml">
+		<img alt="CI" src="https://img.shields.io/github/actions/workflow/status/uesleilima/apache-age-vscode/ci.yml?branch=main&label=CI" />
+	</a>
+	<img alt="VS Code" src="https://img.shields.io/badge/VS%20Code-%5E1.85.0-007ACC" />
+	<img alt="License" src="https://img.shields.io/badge/License-Apache--2.0-2ea44f" />
+</p>
+
 Query [Apache AGE](https://age.apache.org/) graph databases with Cypher — directly from VS Code.
 
 Write Cypher queries with syntax highlighting and snippets, execute them against PostgreSQL + AGE, and visualize results as interactive graphs or sortable tables.
