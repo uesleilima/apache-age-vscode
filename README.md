@@ -1,7 +1,9 @@
 # Apache AGE for VS Code
 
 <p align="center">
-	<img src="media/icon.png" alt="Apache AGE for VS Code icon" width="128" height="128" />
+	<a href="https://marketplace.visualstudio.com/items?itemName=uesleilima.apache-age-vscode">
+		<img src="media/icon.png" alt="Apache AGE for VS Code icon" width="128" height="128" />
+	</a>
 </p>
 
 <p align="center"><strong>Official Marketplace Icon</strong></p>

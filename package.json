@@ -2,8 +2,8 @@
   "name": "apache-age-vscode",
   "displayName": "Apache AGE for VS Code",
   "description": "Query Apache AGE graph databases with Cypher — syntax highlighting, query execution, graph visualization, and schema explorer",
-  "version": "0.1.0",
-  "publisher": "apache-age-community",
+  "version": "0.1.1",
+  "publisher": "uesleilima",
   "license": "Apache-2.0",
   "engines": {
     "vscode": "^1.85.0"
@@ -23,7 +23,7 @@
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/apache-age-community/apache-age-vscode"
+    "url": "https://github.com/uesleilima/apache-age-vscode"
   },
   "main": "./dist/extension.js",
   "activationEvents": [
