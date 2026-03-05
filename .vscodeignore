@@ -1,9 +1,15 @@
-dist/
 node_modules/
 *.vsix
 .vscode-test/
 out/
+.github/
+.vscode/
 src/
 test/
+specs/
+sql/
+media/*.svg
+AGENTS.md
+vitest.config.ts
 tsconfig.json
 .gitignore
