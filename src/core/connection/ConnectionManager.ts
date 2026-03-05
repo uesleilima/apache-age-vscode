@@ -24,6 +24,7 @@ export class ConnectionManager implements vscode.Disposable {
   private readonly pools = new Map<string, ConnectionPool>();
   private activeConnectionId: string | null = null;
   private activeGraph: string | null = null;
+  private availableGraphs: string[] = [];
 
   private readonly _onDidChangeConnections = new vscode.EventEmitter<void>();
   readonly onDidChangeConnections = this._onDidChangeConnections.event;
@@ -154,6 +155,7 @@ export class ConnectionManager implements vscode.Disposable {
     if (this.activeConnectionId === id) {
       this.activeConnectionId = null;
       this.activeGraph = null;
+      this.availableGraphs = [];
       this._onDidChangeActiveConnection.fire();
     }
 
@@ -167,6 +169,7 @@ export class ConnectionManager implements vscode.Disposable {
     this.pools.clear();
     this.activeConnectionId = null;
     this.activeGraph = null;
+    this.availableGraphs = [];
     this._onDidChangeActiveConnection.fire();
     this._onDidChangeConnections.fire();
   }
@@ -194,6 +197,17 @@ export class ConnectionManager implements vscode.Disposable {
 
   get currentGraph(): string | null {
     return this.activeGraph;
+  }
+
+  /** Returns the list of available graphs for the active connection. */
+  getAvailableGraphs(): string[] {
+    return this.availableGraphs;
+  }
+
+  /** Updates the list of available graphs and notifies listeners. */
+  setAvailableGraphs(graphs: string[]): void {
+    this.availableGraphs = graphs;
+    this._onDidChangeConnections.fire();
   }
 
   async setCurrentGraph(graph: string): Promise<void> {

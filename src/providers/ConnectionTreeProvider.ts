@@ -99,21 +99,30 @@ export class ConnectionTreeProvider implements vscode.TreeDataProvider<Connectio
 
     if (!isConnected) return items;
 
-    // Current graph
-    const graph = this.connectionManager.currentGraph;
-    if (graph) {
+    // Available graphs
+    const availableGraphs = this.connectionManager.getAvailableGraphs();
+    const currentGraph = this.connectionManager.currentGraph;
+
+    for (const graphName of availableGraphs) {
+      const isActive = graphName === currentGraph;
       const graphItem = new ConnectionTreeItem(
-        `Graph: ${graph}`,
+        graphName,
         vscode.TreeItemCollapsibleState.None,
         profile,
         'graph',
       );
-      graphItem.iconPath = new vscode.ThemeIcon('type-hierarchy');
-      graphItem.command = {
-        command: 'apache-age.switchGraph',
-        title: 'Switch Graph',
-        arguments: [profile.id],
-      };
+      graphItem.iconPath = new vscode.ThemeIcon(isActive ? 'type-hierarchy-sub' : 'type-hierarchy');
+      graphItem.description = isActive ? '(active)' : '';
+      graphItem.contextValue = 'graph';
+
+      if (!isActive) {
+        graphItem.command = {
+          command: 'apache-age.switchGraph',
+          title: 'Switch to this graph',
+          arguments: [undefined, graphName],
+        };
+      }
+
       items.push(graphItem);
     }
 

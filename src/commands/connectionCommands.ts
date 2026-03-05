@@ -27,7 +27,7 @@ export function registerConnectionCommands(
       removeConnection(connectionManager, item?.profile?.id),
     ),
     vscode.commands.registerCommand('apache-age.connect', (idOrItem: any) =>
-      connect(connectionManager, schemaExplorer, typeof idOrItem === 'string' ? idOrItem : idOrItem?.profile?.id),
+      connect(connectionManager, schemaExplorer, sqlTemplates, typeof idOrItem === 'string' ? idOrItem : idOrItem?.profile?.id),
     ),
     vscode.commands.registerCommand('apache-age.disconnect', (item: any) =>
       disconnect(connectionManager, item?.profile?.id),
@@ -113,6 +113,7 @@ async function removeConnection(manager: ConnectionManager, id?: string): Promis
 async function connect(
   manager: ConnectionManager,
   schemaExplorer: SchemaExplorerProvider,
+  sqlTemplates: SqlTemplates,
   id?: string,
 ): Promise<void> {
   if (!id) {
@@ -130,6 +131,23 @@ async function connect(
 
     const profile = manager.getProfiles().find((p) => p.id === id);
     vscode.window.showInformationMessage(`Connected to ${profile?.name ?? 'database'}`);
+
+    // Fetch available graphs and auto-select the first if none is set
+    const pool = manager.getActivePool();
+    if (pool) {
+      try {
+        const repo = new SchemaRepository(pool, sqlTemplates);
+        const graphs = await repo.getGraphNames();
+        manager.setAvailableGraphs(graphs.map((g) => g.name));
+
+        if (!manager.currentGraph && graphs.length > 0) {
+          await manager.setCurrentGraph(graphs[0].name);
+        }
+      } catch (err) {
+        console.error('Failed to fetch available graphs:', err);
+      }
+    }
+
     await schemaExplorer.refresh();
   } catch (err) {
     vscode.window.showErrorMessage(`Connection failed: ${err}`);

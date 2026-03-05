@@ -39,7 +39,6 @@ export class SchemaExplorerProvider implements vscode.TreeDataProvider<SchemaTre
 
   private graphNodes = new Map<string, LabelInfo[]>();
   private graphEdges = new Map<string, LabelInfo[]>();
-  private graphNames: string[] = [];
 
   constructor(
     private readonly connectionManager: ConnectionManager,
@@ -51,26 +50,20 @@ export class SchemaExplorerProvider implements vscode.TreeDataProvider<SchemaTre
   async refresh(): Promise<void> {
     this.graphNodes.clear();
     this.graphEdges.clear();
-    this.graphNames = [];
 
     const pool = this.connectionManager.getActivePool();
-    if (!pool) {
+    const currentGraph = this.connectionManager.currentGraph;
+
+    if (!pool || !currentGraph) {
       this._onDidChangeTreeData.fire(undefined);
       return;
     }
 
     try {
       const repo = new SchemaRepository(pool, this.sqlTemplates);
-      const graphs = await repo.getGraphNames();
-      this.graphNames = graphs.map((g) => g.name);
-
-      // Load labels for the current graph
-      const currentGraph = this.connectionManager.currentGraph;
-      if (currentGraph && this.graphNames.includes(currentGraph)) {
-        const { nodes, edges } = await repo.getLabels(currentGraph);
-        this.graphNodes.set(currentGraph, nodes);
-        this.graphEdges.set(currentGraph, edges);
-      }
+      const { nodes, edges } = await repo.getLabels(currentGraph);
+      this.graphNodes.set(currentGraph, nodes);
+      this.graphEdges.set(currentGraph, edges);
     } catch (err) {
       console.error('Failed to refresh schema:', err);
     }
@@ -84,11 +77,7 @@ export class SchemaExplorerProvider implements vscode.TreeDataProvider<SchemaTre
 
   getChildren(element?: SchemaTreeItem): SchemaTreeItem[] {
     if (!element) {
-      return this.getGraphItems();
-    }
-
-    if (element.itemType === 'graph' && element.graphName) {
-      return this.getCategoryItems(element.graphName);
+      return this.getCategoryItems();
     }
 
     if (element.itemType === 'category' && element.graphName) {
@@ -99,45 +88,19 @@ export class SchemaExplorerProvider implements vscode.TreeDataProvider<SchemaTre
     return [];
   }
 
-  private getGraphItems(): SchemaTreeItem[] {
+  private getCategoryItems(): SchemaTreeItem[] {
     const pool = this.connectionManager.getActivePool();
-    if (!pool) return [];
-
     const currentGraph = this.connectionManager.currentGraph;
+    if (!pool || !currentGraph) return [];
 
-    return this.graphNames.map((name) => {
-      const isActive = name === currentGraph;
-      const item = new SchemaTreeItem(
-        name,
-        isActive ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed,
-        'graph',
-        name,
-      );
-      item.iconPath = new vscode.ThemeIcon(isActive ? 'type-hierarchy-sub' : 'type-hierarchy');
-      item.description = isActive ? '(active)' : '';
-      item.contextValue = 'graph';
-
-      if (!isActive) {
-        item.command = {
-          command: 'apache-age.switchGraph',
-          title: 'Switch to this graph',
-          arguments: [undefined, name],
-        };
-      }
-
-      return item;
-    });
-  }
-
-  private getCategoryItems(graphName: string): SchemaTreeItem[] {
-    const nodes = this.graphNodes.get(graphName) ?? [];
-    const edges = this.graphEdges.get(graphName) ?? [];
+    const nodes = this.graphNodes.get(currentGraph) ?? [];
+    const edges = this.graphEdges.get(currentGraph) ?? [];
 
     const nodeItem = new SchemaTreeItem(
       'Nodes',
       nodes.length > 0 ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
       'category',
-      graphName,
+      currentGraph,
     );
     nodeItem.iconPath = new vscode.ThemeIcon('circle-filled');
     nodeItem.description = `${nodes.length} label${nodes.length !== 1 ? 's' : ''}`;
@@ -146,7 +109,7 @@ export class SchemaExplorerProvider implements vscode.TreeDataProvider<SchemaTre
       'Edges',
       edges.length > 0 ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
       'category',
-      graphName,
+      currentGraph,
     );
     edgeItem.iconPath = new vscode.ThemeIcon('arrow-right');
     edgeItem.description = `${edges.length} label${edges.length !== 1 ? 's' : ''}`;
