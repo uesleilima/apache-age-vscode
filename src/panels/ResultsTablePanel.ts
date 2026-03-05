@@ -1,3 +1,5 @@
+import * as os from 'node:os';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { QueryResult } from '../core/query/QueryResult';
 
@@ -92,7 +94,7 @@ export class ResultsTablePanel {
       return `<tr class="${i % 2 === 0 ? 'even' : 'odd'}">${cells}</tr>`;
     }).join('');
 
-    const jsonData = escapeAttr(JSON.stringify(rows));
+    const jsonData = JSON.stringify(JSON.stringify(rows)).replaceAll('</', '<\\/');
 
     return /* html */ `<!DOCTYPE html>
 <html lang="en">
@@ -238,7 +240,7 @@ export class ResultsTablePanel {
   </div>`}
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
-    const jsonData = '${jsonData}';
+    const jsonData = ${jsonData};
 
     // Copy cell on click
     document.querySelectorAll('td').forEach(td => {
@@ -288,12 +290,12 @@ export class ResultsTablePanel {
       const keys = Object.keys(data[0]);
       const lines = [keys.join(',')];
       for (const row of data) {
-        lines.push(keys.map((k) => csvEscape(String(row[k] ?? ''))).join(','));
+        lines.push(keys.map((k) => csvEscape(formatCellValue(row[k]))).join(','));
       }
 
       const uri = await vscode.window.showSaveDialog({
         filters: { 'CSV Files': ['csv'] },
-        defaultUri: vscode.Uri.file('query-results.csv'),
+        defaultUri: vscode.Uri.file(path.join(os.homedir(), 'Downloads', 'query-results.csv')),
       });
 
       if (uri) {
@@ -312,7 +314,7 @@ export class ResultsTablePanel {
 
       const uri = await vscode.window.showSaveDialog({
         filters: { 'JSON Files': ['json'] },
-        defaultUri: vscode.Uri.file('query-results.json'),
+        defaultUri: vscode.Uri.file(path.join(os.homedir(), 'Downloads', 'query-results.json')),
       });
 
       if (uri) {
@@ -359,14 +361,14 @@ function formatCellValue(val: unknown): string {
   if (typeof val === 'object') {
     const obj = val as Record<string, unknown>;
 
+    // AGE edge (check before vertex — edges also have id/label/properties)
+    if (obj.__type === 'edge' || (obj.id && obj.label && obj.start_id && obj.end_id)) {
+      return `→ :${obj.label} ${JSON.stringify(obj.properties ?? {})}`;
+    }
+
     // AGE vertex
     if (obj.__type === 'vertex' || (obj.id && obj.label && obj.properties)) {
       return `⊙ :${obj.label} ${JSON.stringify(obj.properties ?? {})}`;
-    }
-
-    // AGE edge
-    if (obj.__type === 'edge' || (obj.id && obj.label && obj.start_id && obj.end_id)) {
-      return `→ :${obj.label} ${JSON.stringify(obj.properties ?? {})}`;
     }
 
     return JSON.stringify(val);

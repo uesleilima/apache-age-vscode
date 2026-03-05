@@ -237,6 +237,7 @@ SQL files live in `sql/` at the project root. They are loaded by `SqlTemplates` 
 
 ## 8. Testing
 
+- When fixing, changing or including new features make sure you include new or adapt the existing tests.
 - Use **Vitest** for unit tests. Tests go in the `test/` directory.
 - Core domain logic should have high test coverage since it has no VS Code dependency.
 - Priority test targets:
