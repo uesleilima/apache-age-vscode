@@ -20,7 +20,12 @@ This is a **VS Code extension** (TypeScript) that enables querying Apache AGE gr
 
 ## 2. Architecture Rules
 
-### 2.1 Layered Separation
+### 2.1 Core Philosophy
+
+- **KISS > DRY > SOLID:** Simplicity is the priority. Do not over-engineer interfaces or abstractions unless the problem complexity explicitly demands it.
+- **Pragmatic DRY:** De-duplicate knowledge, but accept duplication to avoid coupling unrelated logic (no incidental coupling).
+
+### 2.2 Layered Separation
 
 The codebase follows a strict layered architecture. **Never violate layer boundaries.**
 
@@ -43,7 +48,7 @@ src/
 
 This ensures core logic is unit-testable without VS Code and potentially reusable outside the extension.
 
-### 2.2 Dependency Injection
+### 2.3 Dependency Injection
 
 All dependencies are wired in `extension.ts` via constructor parameters. **Do not use:**
 
@@ -53,7 +58,7 @@ All dependencies are wired in `extension.ts` via constructor parameters. **Do no
 
 When adding a new service/provider, instantiate it in `activate()` and pass its dependencies explicitly.
 
-### 2.3 Event-Driven UI Updates
+### 2.4 Event-Driven UI Updates
 
 UI providers (tree views, status bar) subscribe to `ConnectionManager` events:
 

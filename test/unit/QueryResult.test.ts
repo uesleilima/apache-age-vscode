@@ -4,6 +4,7 @@ import {
   isAgeEdge,
   isAgePath,
   extractGraphElements,
+  gidToString,
   AgeVertex,
   AgeEdge,
 } from '../../src/core/query/QueryResult';
@@ -16,6 +17,16 @@ function makeVertex(oid: number, id: number, label: string, props: Record<string
 
 function makeEdge(oid: number, id: number, label: string, startOid: number, startId: number, endOid: number, endId: number, props: Record<string, unknown> = {}): AgeEdge {
   return { id: { oid, id }, label, start_id: { oid: startOid, id: startId }, end_id: { oid: endOid, id: endId }, properties: props };
+}
+
+/** Create a vertex with a plain integer graphid (as returned by most AGE versions). */
+function makeVertexPlain(id: number, label: string, props: Record<string, unknown> = {}): AgeVertex {
+  return { id, label, properties: props };
+}
+
+/** Create an edge with plain integer graphids. */
+function makeEdgePlain(id: number, label: string, startId: number, endId: number, props: Record<string, unknown> = {}): AgeEdge {
+  return { id, label, start_id: startId, end_id: endId, properties: props };
 }
 
 // ── Type Guards ───────────────────────────────────────────────────────
@@ -195,5 +206,56 @@ describe('extractGraphElements', () => {
     const { vertices, edges } = extractGraphElements(rows);
     expect(vertices).toHaveLength(1);
     expect(edges).toHaveLength(0);
+  });
+
+  // ── Plain integer graphid format ──────────────────────────────────
+
+  it('should extract vertices with plain integer ids', () => {
+    const v1 = makeVertexPlain(844424930131969, 'Person', { name: 'Alice' });
+    const v2 = makeVertexPlain(844424930131970, 'Person', { name: 'Bob' });
+    const rows = [{ n: v1 }, { n: v2 }];
+
+    const { vertices } = extractGraphElements(rows);
+    expect(vertices).toHaveLength(2);
+  });
+
+  it('should extract edges with plain integer ids', () => {
+    const e = makeEdgePlain(1125899906842625, 'KNOWS', 844424930131969, 844424930131970, { since: 2020 });
+    const rows = [{ r: e }];
+
+    const { edges } = extractGraphElements(rows);
+    expect(edges).toHaveLength(1);
+    expect(edges[0].label).toBe('KNOWS');
+  });
+
+  it('should deduplicate plain-id vertices', () => {
+    const v = makeVertexPlain(844424930131969, 'Person');
+    const rows = [{ n: v }, { n: v }];
+
+    const { vertices } = extractGraphElements(rows);
+    expect(vertices).toHaveLength(1);
+  });
+
+  it('should extract both vertices and edges with plain integer ids', () => {
+    const v1 = makeVertexPlain(100, 'Product', { name: 'P1' });
+    const v2 = makeVertexPlain(200, 'Journey', { name: 'J1' });
+    const e = makeEdgePlain(300, 'HAS_JOURNEY', 100, 200);
+    const rows = [{ p: v1, r: e, j: v2 }];
+
+    const { vertices, edges } = extractGraphElements(rows);
+    expect(vertices).toHaveLength(2);
+    expect(edges).toHaveLength(1);
+  });
+});
+
+// ── gidToString ───────────────────────────────────────────────────────
+
+describe('gidToString', () => {
+  it('should convert a plain number to string', () => {
+    expect(gidToString(844424930131969)).toBe('844424930131969');
+  });
+
+  it('should convert an {oid, id} object to "oid.id"', () => {
+    expect(gidToString({ oid: 100, id: 1 })).toBe('100.1');
   });
 });

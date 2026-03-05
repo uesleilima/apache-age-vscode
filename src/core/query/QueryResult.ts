@@ -15,10 +15,23 @@ export interface QueryResult {
 }
 
 /**
+ * AGE graph ID — either a plain integer graphid or a decomposed {oid, id} object.
+ */
+export type GraphId = number | { oid: number; id: number };
+
+/**
+ * Convert any graph ID format to a stable string key.
+ */
+export function gidToString(gid: GraphId): string {
+  if (typeof gid === 'object' && gid !== null) return `${gid.oid}.${gid.id}`;
+  return String(gid);
+}
+
+/**
  * A vertex (node) as returned by AGE's agtype parser.
  */
 export interface AgeVertex {
-  id: { oid: number; id: number };
+  id: GraphId;
   label: string;
   properties: Record<string, unknown>;
 }
@@ -27,10 +40,10 @@ export interface AgeVertex {
  * An edge (relationship) as returned by AGE's agtype parser.
  */
 export interface AgeEdge {
-  id: { oid: number; id: number };
+  id: GraphId;
   label: string;
-  start_id: { oid: number; id: number };
-  end_id: { oid: number; id: number };
+  start_id: GraphId;
+  end_id: GraphId;
   properties: Record<string, unknown>;
 }
 
@@ -83,12 +96,12 @@ export function extractGraphElements(rows: Record<string, unknown>[]): {
 
   function processValue(val: unknown): void {
     if (isAgeVertex(val)) {
-      const key = `${val.id.oid}.${val.id.id}`;
+      const key = gidToString(val.id);
       if (!vertexMap.has(key)) {
         vertexMap.set(key, val);
       }
     } else if (isAgeEdge(val)) {
-      const key = `${val.id.oid}.${val.id.id}`;
+      const key = gidToString(val.id);
       if (!edgeMap.has(key)) {
         edgeMap.set(key, val);
       }

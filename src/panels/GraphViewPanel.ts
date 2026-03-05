@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { QueryResult, extractGraphElements, AgeVertex, AgeEdge } from '../core/query/QueryResult';
+import { QueryResult, extractGraphElements, AgeVertex, AgeEdge, gidToString } from '../core/query/QueryResult';
 
 /**
  * Manages the graph visualization webview panel using Cytoscape.js.
@@ -61,7 +61,7 @@ export class GraphViewPanel {
         id: vertexId(v),
         label: v.label,
         properties: v.properties,
-        displayLabel: `:${v.label}`,
+        displayLabel: nodeDisplayLabel(v),
         displayProps: formatProps(v.properties),
       },
     }));
@@ -139,6 +139,21 @@ export class GraphViewPanel {
       width: 100%;
       height: calc(100vh - 42px);
     }
+    #legend {
+      position: absolute;
+      top: 50px;
+      left: 12px;
+      background: var(--header-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.8em;
+      display: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    #legend .legend-title { font-weight: bold; margin-bottom: 4px; opacity: 0.7; }
+    #legend .legend-item { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+    #legend .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     #details {
       position: absolute;
       bottom: 12px;
@@ -182,6 +197,7 @@ export class GraphViewPanel {
     <button id="btnPng">PNG</button>
   </div>
   <div id="cy"></div>
+  <div id="legend"></div>
   <div id="details"></div>
 
   <script nonce="${nonce}" src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.4/cytoscape.min.js"></script>
@@ -220,6 +236,21 @@ export class GraphViewPanel {
         e.data.color = getColor(e.data.label);
       });
 
+      // Build legend
+      const legendEl = document.getElementById('legend');
+      const nodeLabels = [...new Set(elements.nodes.map(n => n.data.label))];
+      if (nodeLabels.length > 0) {
+        let html = '<div class="legend-title">Node Types</div>';
+        nodeLabels.forEach(l => {
+          html += '<div class="legend-item"><span class="legend-dot" data-color="' + getColor(l) + '"></span>' + l + '</div>';
+        });
+        legendEl.innerHTML = html;
+        legendEl.querySelectorAll('.legend-dot').forEach(dot => {
+          dot.style.backgroundColor = dot.getAttribute('data-color');
+        });
+        legendEl.style.display = 'block';
+      }
+
       const cy = cytoscape({
         container: document.getElementById('cy'),
         elements: elements,
@@ -232,11 +263,14 @@ export class GraphViewPanel {
               'color': '#fff',
               'text-outline-color': 'data(color)',
               'text-outline-width': 2,
-              'font-size': '11px',
+              'font-size': '9px',
               'text-valign': 'center',
               'text-halign': 'center',
-              'width': 40,
-              'height': 40,
+              'text-wrap': 'wrap',
+              'text-max-width': '60px',
+              'text-overflow-wrap': 'anywhere',
+              'width': 50,
+              'height': 50,
             }
           },
           {
@@ -321,21 +355,38 @@ function getNonce(): string {
 }
 
 function vertexId(v: AgeVertex): string {
-  if (v.id !== undefined) return String(v.id);
-  return `v_${v.label}_${JSON.stringify(v.properties)}`;
+  return gidToString(v.id);
 }
 
 function vertexIdFromGid(gid: unknown): string {
+  if (typeof gid === 'object' && gid !== null && 'oid' in gid && 'id' in gid) {
+    const g = gid as { oid: number; id: number };
+    return `${g.oid}.${g.id}`;
+  }
   return String(gid);
 }
 
 function edgeId(e: AgeEdge): string {
-  if (e.id !== undefined) return `e_${e.id}`;
-  return `e_${e.label}_${e.start_id}_${e.end_id}`;
+  return `e_${gidToString(e.id)}`;
 }
 
 function formatProps(props: Record<string, unknown>): string {
   const entries = Object.entries(props);
   if (entries.length === 0) return '';
   return entries.map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ');
+}
+
+/** Common property names used as a display name for nodes, checked in priority order. */
+const DISPLAY_NAME_KEYS = ['name', 'title', 'label', 'description', 'key', 'code', 'id'];
+
+function nodeDisplayLabel(v: AgeVertex): string {
+  for (const key of DISPLAY_NAME_KEYS) {
+    const val = v.properties[key];
+    if (val !== undefined && val !== null && val !== '') {
+      if (typeof val === 'object') continue;
+      const str = String(val);
+      return str.length > 30 ? str.slice(0, 27) + '...' : str;
+    }
+  }
+  return `:${v.label}`;
 }

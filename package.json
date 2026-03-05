@@ -154,6 +154,12 @@
         "title": "Show Graph Visualization",
         "category": "Apache AGE",
         "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "apache-age.openQueryEditor",
+        "title": "Open Query Editor",
+        "category": "Apache AGE",
+        "icon": "$(new-file)"
       }
     ],
     "menus": {
@@ -193,6 +199,16 @@
         {
           "command": "apache-age.switchGraph",
           "when": "view == ageConnections && viewItem == connectionConnected",
+          "group": "2_graph"
+        },
+        {
+          "command": "apache-age.openQueryEditor",
+          "when": "view == ageConnections && viewItem == graph",
+          "group": "inline"
+        },
+        {
+          "command": "apache-age.openQueryEditor",
+          "when": "view == ageConnections && viewItem == graph",
           "group": "2_graph"
         }
       ],

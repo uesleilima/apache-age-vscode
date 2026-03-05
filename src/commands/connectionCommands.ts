@@ -35,6 +35,9 @@ export function registerConnectionCommands(
     vscode.commands.registerCommand('apache-age.switchGraph', (_idOrItem?: any, graphName?: string) =>
       switchGraph(connectionManager, sqlTemplates, schemaExplorer, graphName),
     ),
+    vscode.commands.registerCommand('apache-age.openQueryEditor', (item?: any) =>
+      openQueryEditor(connectionManager, schemaExplorer, sqlTemplates, item),
+    ),
   );
 }
 
@@ -296,4 +299,26 @@ async function promptConnectionDetails(
     password,
     graph: graph || undefined,
   };
+}
+
+async function openQueryEditor(
+  manager: ConnectionManager,
+  schemaExplorer: SchemaExplorerProvider,
+  sqlTemplates: SqlTemplates,
+  item?: any,
+): Promise<void> {
+  if (!manager.getActivePool()) {
+    vscode.window.showWarningMessage('No active connection. Connect first.');
+    return;
+  }
+
+  // If invoked from a graph tree item, switch to that graph first
+  const graphName: string | undefined = item?.itemType === 'graph' ? item.label : undefined;
+  if (graphName && graphName !== manager.currentGraph) {
+    await manager.setCurrentGraph(graphName);
+    await schemaExplorer.refresh();
+  }
+
+  const doc = await vscode.workspace.openTextDocument({ language: 'cypher' });
+  await vscode.window.showTextDocument(doc);
 }
