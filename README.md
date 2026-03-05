@@ -71,6 +71,14 @@ Write Cypher queries with syntax highlighting and snippets, execute them against
 - **PostgreSQL** with [Apache AGE](https://age.apache.org/) extension installed
 - Node.js 18+ (for extension development only)
 
+### Network Access (Graph View)
+
+The graph visualization webview loads [Cytoscape.js](https://js.cytoscape.org/) from the CDN at:
+
+- `https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.4/cytoscape.min.js`
+
+If your environment is offline or blocks external CDNs, query execution and table results still work, but the graph view will not render until that URL is reachable.
+
 ## Getting Started
 
 1. Install the extension (F5 to run in development, or install the `.vsix` package)

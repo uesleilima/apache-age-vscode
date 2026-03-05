@@ -7,7 +7,6 @@ out/
 src/
 test/
 specs/
-sql/
 media/icon-marketplace.svg
 AGENTS.md
 vitest.config.ts
