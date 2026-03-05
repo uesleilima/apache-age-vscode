@@ -24,7 +24,7 @@ export class GraphViewPanel {
     const column = vscode.ViewColumn.Beside;
 
     if (GraphViewPanel.currentPanel) {
-      GraphViewPanel.currentPanel.panel.reveal(column);
+      GraphViewPanel.currentPanel.panel.reveal(column, true);
       GraphViewPanel.currentPanel.update(result, query);
       return GraphViewPanel.currentPanel;
     }
@@ -32,7 +32,7 @@ export class GraphViewPanel {
     const panel = vscode.window.createWebviewPanel(
       GraphViewPanel.viewType,
       'AGE Graph',
-      column,
+      { viewColumn: column, preserveFocus: true },
       {
         enableScripts: true,
         retainContextWhenHidden: true,

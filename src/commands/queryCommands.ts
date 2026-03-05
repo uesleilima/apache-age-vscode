@@ -78,10 +78,8 @@ async function executeAndShow(
       () => executor.execute(query, graphName, autoWrap),
     );
 
-    // Always show the results table
-    ResultsTablePanel.show(context.extensionUri, result, query);
-
-    // Show graph view if results contain graph elements
+    // Show graph view first (if applicable) so it opens as a full-height right column
+    // BEFORE the results panel splits the query editor's group vertically.
     if (vizEnabled) {
       const { vertices, edges } = extractGraphElements(result.rows);
       if (vertices.length > 0 || edges.length > 0) {
@@ -96,6 +94,9 @@ async function executeAndShow(
         GraphViewPanel.show(context.extensionUri, result, query);
       }
     }
+
+    // Show the results table below the query editor
+    await ResultsTablePanel.show(context.extensionUri, result, query);
 
     // Status message
     vscode.window.setStatusBarMessage(

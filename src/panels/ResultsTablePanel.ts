@@ -34,26 +34,31 @@ export class ResultsTablePanel {
 
   /**
    * Show or reuse the results panel.
+   * Opens below the query editor, splitting the editor group vertically.
    */
-  static show(extensionUri: vscode.Uri, result: QueryResult, query: string): ResultsTablePanel {
-    const column = vscode.ViewColumn.Beside;
-
+  static async show(extensionUri: vscode.Uri, result: QueryResult, query: string): Promise<ResultsTablePanel> {
     if (ResultsTablePanel.currentPanel) {
-      ResultsTablePanel.currentPanel.panel.reveal(column);
+      ResultsTablePanel.currentPanel.panel.reveal(undefined, true);
       ResultsTablePanel.currentPanel.update(result, query);
       return ResultsTablePanel.currentPanel;
     }
 
+    // Open the results panel in the same group as the active (query) editor — it takes focus
     const panel = vscode.window.createWebviewPanel(
       ResultsTablePanel.viewType,
       'AGE Results',
-      column,
+      vscode.ViewColumn.Active,
       {
         enableScripts: true,
         retainContextWhenHidden: true,
         localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
       },
     );
+
+    // Split the group: move the focused results panel into a new group below,
+    // then return focus to the query editor above.
+    await vscode.commands.executeCommand('workbench.action.moveEditorToBelowGroup');
+    await vscode.commands.executeCommand('workbench.action.focusPreviousGroup');
 
     panel.iconPath = vscode.Uri.joinPath(extensionUri, 'media', 'age-icon.svg');
 
