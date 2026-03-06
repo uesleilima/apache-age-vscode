@@ -1,10 +1,13 @@
+import * as fs from 'fs';
 import { Pool, PoolClient, PoolConfig as PgPoolConfig, types } from 'pg';
 import {
   ConnectionCredentials,
   PoolConfig,
   DEFAULT_POOL_CONFIG,
+  SslMode,
 } from './ConnectionConfig';
 import { deserializeAgtype } from '../parser/AgtypeDeserializer';
+import { createProxyClientClass } from './ProxyConnector';
 
 /**
  * Wraps a pg.Pool with Apache AGE–specific initialization.
@@ -41,7 +44,12 @@ export class ConnectionPool {
       max: this.poolConfig.max,
       idleTimeoutMillis: this.poolConfig.idleTimeoutMillis,
       connectionTimeoutMillis: this.poolConfig.connectionTimeoutMillis,
+      ssl: this.buildSslConfig(),
     };
+
+    if (this.credentials.proxyUrl) {
+      (pgConfig as any).Client = createProxyClientClass(this.credentials.proxyUrl);
+    }
 
     this.pool = new Pool(pgConfig);
 
@@ -88,14 +96,41 @@ export class ConnectionPool {
   }
 
   /**
+   * Build the SSL config object for pg.Pool from the credentials' sslMode.
+   */
+  private buildSslConfig(): boolean | { rejectUnauthorized: boolean; ca?: string } {
+    const mode: SslMode | undefined = this.credentials.sslMode;
+    if (!mode || mode === 'disable') {
+      return false;
+    }
+    if (mode === 'require') {
+      return { rejectUnauthorized: false };
+    }
+    // verify-ca and verify-full both require certificate validation.
+    // pg driver verifies hostname automatically when rejectUnauthorized is true.
+    const config: { rejectUnauthorized: boolean; ca?: string } = { rejectUnauthorized: true };
+    if (this.credentials.sslCaCertPath) {
+      config.ca = fs.readFileSync(this.credentials.sslCaCertPath, 'utf-8');
+    }
+    return config;
+  }
+
+  /**
    * Initialize AGE extension and register agtype parser on a client.
+   *
+   * In managed server mode (e.g. Azure), only SET search_path is executed
+   * since the AGE extension is pre-loaded by the server.
    */
   private async initializeAge(client: PoolClient): Promise<void> {
-    await client.query(`
-      CREATE EXTENSION IF NOT EXISTS age;
-      LOAD 'age';
-      SET search_path = ag_catalog, "$user", public;
-    `);
+    if (this.credentials.managedServer) {
+      await client.query('SET search_path = ag_catalog, "$user", public;');
+    } else {
+      await client.query(`
+        CREATE EXTENSION IF NOT EXISTS age;
+        LOAD 'age';
+        SET search_path = ag_catalog, "$user", public;
+      `);
+    }
 
     // Discover the agtype OID if we haven't yet
     if (this.agtypeOid === null) {

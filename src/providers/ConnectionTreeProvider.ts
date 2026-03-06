@@ -133,6 +133,9 @@ export class ConnectionTreeProvider implements vscode.TreeDataProvider<Connectio
         `Host: \`${profile.host}:${profile.port}\`\n\n` +
         `Database: \`${profile.database}\`\n\n` +
         `User: \`${profile.user}\`\n\n` +
+        (profile.managedServer ? `Managed: Yes (Azure)\n\n` : '') +
+        (profile.sslMode && profile.sslMode !== 'disable' ? `SSL: ${profile.sslMode}\n\n` : '') +
+        (profile.proxyUrl ? `Proxy: ${this.redactProxyUrl(profile.proxyUrl)}\n\n` : '') +
         `Status: ${isConnected ? '🟢 Connected' : '⚪ Disconnected'}`
       );
 
@@ -187,5 +190,21 @@ export class ConnectionTreeProvider implements vscode.TreeDataProvider<Connectio
     }
 
     return items;
+  }
+
+  /**
+   * Redact credentials from a proxy URL for display in tooltips.
+   */
+  private redactProxyUrl(proxyUrl: string): string {
+    try {
+      const url = new URL(proxyUrl);
+      if (url.username || url.password) {
+        url.username = '***';
+        url.password = '';
+      }
+      return url.toString();
+    } catch {
+      return proxyUrl;
+    }
   }
 }

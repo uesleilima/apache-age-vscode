@@ -297,6 +297,7 @@
   "dependencies": {
     "pg": "^8.13.0",
     "pg-types": "^4.0.2",
+    "socks": "^2.8.7",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

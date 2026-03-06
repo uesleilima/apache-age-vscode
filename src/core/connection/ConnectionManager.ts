@@ -52,6 +52,10 @@ export class ConnectionManager implements vscode.Disposable {
       database: config.database,
       user: config.user,
       graph: config.graph,
+      managedServer: config.managedServer,
+      sslMode: config.sslMode,
+      sslCaCertPath: config.sslCaCertPath,
+      proxyUrl: config.proxyUrl,
     };
 
     const profiles = this.getProfiles();
@@ -77,6 +81,10 @@ export class ConnectionManager implements vscode.Disposable {
       database: config.database ?? existing.database,
       user: config.user ?? existing.user,
       graph: config.graph ?? existing.graph,
+      managedServer: config.managedServer ?? existing.managedServer,
+      sslMode: config.sslMode ?? existing.sslMode,
+      sslCaCertPath: config.sslCaCertPath ?? existing.sslCaCertPath,
+      proxyUrl: config.proxyUrl ?? existing.proxyUrl,
     };
 
     await this.globalState.update(CONNECTIONS_KEY, profiles);

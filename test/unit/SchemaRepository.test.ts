@@ -10,7 +10,6 @@ describe('SchemaRepository', () => {
   };
   let mockSql: {
     get: ReturnType<typeof vi.fn>;
-    getMetaData: ReturnType<typeof vi.fn>;
   };
   let repo: SchemaRepository;
 
@@ -21,7 +20,6 @@ describe('SchemaRepository', () => {
     };
     mockSql = {
       get: vi.fn().mockReturnValue('SELECT 1'),
-      getMetaData: vi.fn().mockReturnValue('SELECT * FROM metadata'),
     };
     repo = new SchemaRepository(
       mockPool as unknown as ConnectionPool,
@@ -88,7 +86,7 @@ describe('SchemaRepository', () => {
     it('should use version-appropriate metadata query', async () => {
       mockPool.query.mockResolvedValue({ rows: [] });
       await repo.getLabels('test_graph');
-      expect(mockSql.getMetaData).toHaveBeenCalledWith('test_graph', 15);
+      expect(mockSql.get).toHaveBeenCalledWith('getMetaData', 'test_graph');
     });
 
     it('should round counts', async () => {

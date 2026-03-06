@@ -16,6 +16,7 @@ vi.mock('pg', () => {
 
   return {
     Pool: vi.fn(() => mockPool),
+    Client: vi.fn(),
     types: {
       setTypeParser: vi.fn(),
     },
@@ -23,6 +24,16 @@ vi.mock('pg', () => {
     __mockClient: mockClient,
   };
 });
+
+// Mock the ProxyConnector module
+vi.mock('../../src/core/connection/ProxyConnector', () => ({
+  createProxyClientClass: vi.fn().mockReturnValue(class FakeProxyClient {}),
+}));
+
+// Mock fs for SSL cert reading
+vi.mock('fs', () => ({
+  readFileSync: vi.fn().mockReturnValue('FAKE-CA-CERT'),
+}));
 
 // Access mocks
 import { Pool, types, __mockPool, __mockClient } from 'pg';
@@ -230,6 +241,104 @@ describe('ConnectionPool', () => {
       await customPool.connect();
       const poolConfig = (Pool as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(poolConfig.max).toBe(5);
+    });
+  });
+
+  describe('managed server mode', () => {
+    it('should only run SET search_path when managedServer is true', async () => {
+      const managedPool = new ConnectionPool({ ...TEST_CREDENTIALS, managedServer: true });
+      await managedPool.connect();
+
+      const calls = (__mockClient as any).query.mock.calls;
+      const setPathCall = calls.find((c: string[]) =>
+        typeof c[0] === 'string' && c[0].includes('SET search_path') && !c[0].includes('CREATE EXTENSION'),
+      );
+      expect(setPathCall).toBeDefined();
+
+      const createExtCall = calls.find((c: string[]) =>
+        typeof c[0] === 'string' && c[0].includes('CREATE EXTENSION'),
+      );
+      expect(createExtCall).toBeUndefined();
+    });
+
+    it('should run full init when managedServer is false', async () => {
+      const standardPool = new ConnectionPool({ ...TEST_CREDENTIALS, managedServer: false });
+      await standardPool.connect();
+
+      const calls = (__mockClient as any).query.mock.calls;
+      const createExtCall = calls.find((c: string[]) =>
+        typeof c[0] === 'string' && c[0].includes('CREATE EXTENSION'),
+      );
+      expect(createExtCall).toBeDefined();
+    });
+
+    it('should run full init when managedServer is undefined', async () => {
+      await pool.connect();
+
+      const calls = (__mockClient as any).query.mock.calls;
+      const createExtCall = calls.find((c: string[]) =>
+        typeof c[0] === 'string' && c[0].includes('CREATE EXTENSION'),
+      );
+      expect(createExtCall).toBeDefined();
+    });
+  });
+
+  describe('SSL configuration', () => {
+    it('should set ssl to false when sslMode is disable', async () => {
+      const sslPool = new ConnectionPool({ ...TEST_CREDENTIALS, sslMode: 'disable' });
+      await sslPool.connect();
+      const poolConfig = (Pool as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(poolConfig.ssl).toBe(false);
+    });
+
+    it('should set ssl to false when sslMode is undefined', async () => {
+      await pool.connect();
+      const poolConfig = (Pool as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(poolConfig.ssl).toBe(false);
+    });
+
+    it('should set ssl with rejectUnauthorized=false for require mode', async () => {
+      const sslPool = new ConnectionPool({ ...TEST_CREDENTIALS, sslMode: 'require' });
+      await sslPool.connect();
+      const poolConfig = (Pool as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(poolConfig.ssl).toEqual({ rejectUnauthorized: false });
+    });
+
+    it('should set ssl with rejectUnauthorized=true and CA cert for verify-ca', async () => {
+      const sslPool = new ConnectionPool({
+        ...TEST_CREDENTIALS,
+        sslMode: 'verify-ca',
+        sslCaCertPath: '/path/to/ca.pem',
+      });
+      await sslPool.connect();
+      const poolConfig = (Pool as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(poolConfig.ssl).toEqual({ rejectUnauthorized: true, ca: 'FAKE-CA-CERT' });
+    });
+
+    it('should set ssl with rejectUnauthorized=true for verify-full', async () => {
+      const sslPool = new ConnectionPool({
+        ...TEST_CREDENTIALS,
+        sslMode: 'verify-full',
+        sslCaCertPath: '/path/to/ca.pem',
+      });
+      await sslPool.connect();
+      const poolConfig = (Pool as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(poolConfig.ssl).toEqual({ rejectUnauthorized: true, ca: 'FAKE-CA-CERT' });
+    });
+  });
+
+  describe('proxy configuration', () => {
+    it('should pass custom Client class when proxyUrl is set', async () => {
+      const proxyPool = new ConnectionPool({ ...TEST_CREDENTIALS, proxyUrl: 'http://proxy:8080' });
+      await proxyPool.connect();
+      const poolConfig = (Pool as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(poolConfig.Client).toBeDefined();
+    });
+
+    it('should not set Client when proxyUrl is not set', async () => {
+      await pool.connect();
+      const poolConfig = (Pool as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(poolConfig.Client).toBeUndefined();
     });
   });
 });

@@ -1,12 +1,20 @@
-SELECT * FROM (
-    SELECT c.relname AS label, n.oid as namespace_id, c.reltuples AS cnt
-    FROM pg_catalog.pg_class c
-    JOIN pg_catalog.pg_namespace n
-    ON n.oid = c.relnamespace
-    WHERE c.relkind = 'r'
-    AND n.nspname = '%s'
-) as q1
-JOIN ag_graph as g ON q1.namespace_id = g.namespace
-INNER JOIN ag_label as label
-ON label.name = q1.label
-AND label.graph = g.graphid;
+-- Get labels (nodes + edges) for a graph.
+-- Uses only pg_catalog — works on both self-hosted and managed (Azure) PostgreSQL.
+-- Edge vs vertex is determined by the presence of a start_id column.
+SELECT
+    c.relname AS label,
+    c.reltuples::bigint AS cnt,
+    CASE
+        WHEN EXISTS (
+            SELECT 1 FROM pg_catalog.pg_attribute a
+            WHERE a.attrelid = c.oid
+              AND a.attname = 'start_id'
+              AND NOT a.attisdropped
+        ) THEN 'e' ELSE 'v'
+    END AS kind
+FROM pg_catalog.pg_class c
+JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = '%s'
+  AND c.relkind = 'r'
+  AND c.relname NOT IN ('_ag_label_vertex', '_ag_label_edge')
+  AND c.relname !~ '^pg_';

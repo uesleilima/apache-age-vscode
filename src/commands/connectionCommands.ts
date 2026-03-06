@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { ConnectionManager } from '../core/connection/ConnectionManager';
-import { ConnectionCredentials } from '../core/connection/ConnectionConfig';
+import { ConnectionCredentials, SslMode } from '../core/connection/ConnectionConfig';
 import { SchemaRepository } from '../core/schema/SchemaRepository';
 import { SqlTemplates } from '../utils/SqlTemplates';
 import { ConnectionTreeProvider } from '../providers/ConnectionTreeProvider';
 import { SchemaExplorerProvider } from '../providers/SchemaExplorerProvider';
+import { isConnectionString, parseConnectionString } from '../core/connection/ConnectionStringParser';
 
 /**
  * Register all connection-related commands.
@@ -42,7 +43,38 @@ export function registerConnectionCommands(
 }
 
 async function addConnection(manager: ConnectionManager): Promise<void> {
-  const creds = await promptConnectionDetails();
+  // Offer manual entry or connection string import
+  const method = await vscode.window.showQuickPick(
+    [
+      { label: 'Enter details manually', value: 'manual' },
+      { label: 'Paste connection string', value: 'connstring', description: 'postgresql://user:pass@host:port/db' },
+    ],
+    { placeHolder: 'How would you like to add a connection?' },
+  );
+  if (!method) return;
+
+  let defaults: Partial<ConnectionCredentials> | undefined;
+  if (method.value === 'connstring') {
+    const connStr = await vscode.window.showInputBox({
+      prompt: 'Paste your PostgreSQL connection string',
+      placeHolder: 'postgresql://user:password@host:5432/database?sslmode=require',
+      validateInput: (v) => {
+        if (!v.trim()) return 'Connection string is required';
+        if (!isConnectionString(v)) return 'Must start with postgresql:// or postgres://';
+        return null;
+      },
+    });
+    if (connStr === undefined) return;
+
+    try {
+      defaults = parseConnectionString(connStr);
+    } catch (err) {
+      vscode.window.showErrorMessage(`Invalid connection string: ${err}`);
+      return;
+    }
+  }
+
+  const creds = await promptConnectionDetails(defaults);
   if (!creds) return;
 
   try {
@@ -240,7 +272,7 @@ async function pickConnection(
 }
 
 async function promptConnectionDetails(
-  defaults?: { name: string; host: string; port: number; database: string; user: string; graph?: string },
+  defaults?: Partial<ConnectionCredentials>,
 ): Promise<ConnectionCredentials | undefined> {
   const name = await vscode.window.showInputBox({
     prompt: 'Connection name',
@@ -290,6 +322,67 @@ async function promptConnectionDetails(
     value: defaults?.graph ?? '',
   });
 
+  // --- Enterprise settings ---
+
+  const managedPick = await vscode.window.showQuickPick(
+    [
+      { label: 'No (standard)', value: false, description: 'Full AGE init (CREATE EXTENSION + LOAD)' },
+      { label: 'Yes (Azure, managed)', value: true, description: 'Skip CREATE EXTENSION and LOAD — only SET search_path' },
+    ],
+    {
+      placeHolder: 'Is this a managed AGE server?',
+      canPickMany: false,
+    },
+  );
+  if (!managedPick) return;
+  const managedServer = defaults?.managedServer ?? managedPick.value;
+
+  const sslModeItems = [
+    { label: 'Disable', value: 'disable' as SslMode, description: 'No SSL' },
+    { label: 'Require', value: 'require' as SslMode, description: 'SSL required, no certificate verification' },
+    { label: 'Verify CA', value: 'verify-ca' as SslMode, description: 'Verify server certificate against CA' },
+    { label: 'Verify Full', value: 'verify-full' as SslMode, description: 'Verify CA + hostname match' },
+  ];
+  const defaultSslIdx = sslModeItems.findIndex(i => i.value === defaults?.sslMode);
+  const sslPick = await vscode.window.showQuickPick(sslModeItems, {
+    placeHolder: 'SSL mode',
+  });
+  if (!sslPick) return;
+  const sslMode = sslPick.value;
+
+  let sslCaCertPath: string | undefined = defaults?.sslCaCertPath;
+  if (sslMode === 'verify-ca' || sslMode === 'verify-full') {
+    const certFiles = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      openLabel: 'Select CA Certificate',
+      filters: { 'Certificates': ['pem', 'crt', 'cer'] },
+      defaultUri: sslCaCertPath ? vscode.Uri.file(sslCaCertPath) : undefined,
+    });
+    if (certFiles && certFiles.length > 0) {
+      sslCaCertPath = certFiles[0].fsPath;
+    }
+  }
+
+  const proxyUrl = await vscode.window.showInputBox({
+    prompt: 'Proxy URL (optional)',
+    placeHolder: 'http://proxy:8080 or socks5://proxy:1080',
+    value: defaults?.proxyUrl ?? '',
+    validateInput: (v) => {
+      if (!v.trim()) return null; // optional
+      try {
+        const url = new URL(v);
+        const scheme = url.protocol.replace(':', '').toLowerCase();
+        if (!['http', 'https', 'socks4', 'socks5', 'socks4a', 'socks5h'].includes(scheme)) {
+          return 'Unsupported scheme. Use http://, socks4://, or socks5://';
+        }
+      } catch {
+        return 'Invalid URL format';
+      }
+      return null;
+    },
+  });
+  if (proxyUrl === undefined) return;
+
   return {
     name,
     host,
@@ -298,6 +391,10 @@ async function promptConnectionDetails(
     user,
     password,
     graph: graph || undefined,
+    managedServer,
+    sslMode,
+    sslCaCertPath,
+    proxyUrl: proxyUrl || undefined,
   };
 }
 

@@ -34,8 +34,7 @@ export class SchemaRepository {
    * Get labels for a specific graph, separated into nodes and edges.
    */
   async getLabels(graphName: string): Promise<{ nodes: LabelInfo[]; edges: LabelInfo[] }> {
-    const pgMajor = this.pool.majorVersion;
-    const result = await this.pool.query(this.sql.getMetaData(graphName, pgMajor));
+    const result = await this.pool.query(this.sql.get('getMetaData', graphName));
 
     const nodes: LabelInfo[] = [];
     const edges: LabelInfo[] = [];

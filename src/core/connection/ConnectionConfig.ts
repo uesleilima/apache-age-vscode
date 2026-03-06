@@ -1,4 +1,9 @@
 /**
+ * SSL mode for PostgreSQL connections.
+ */
+export type SslMode = 'disable' | 'require' | 'verify-ca' | 'verify-full';
+
+/**
  * Connection configuration for an Apache AGE database.
  */
 export interface ConnectionConfig {
@@ -12,9 +17,16 @@ export interface ConnectionConfig {
   database: string;
   /** PostgreSQL user */
   user: string;
-  /** Password is stored separately in SecretStorage */
   /** Currently selected graph name */
   graph?: string;
+  /** When true, skip CREATE EXTENSION and LOAD 'age' — only SET search_path (for Azure/managed servers) */
+  managedServer?: boolean;
+  /** SSL mode for the connection */
+  sslMode?: SslMode;
+  /** Path to CA certificate file (used when sslMode is 'verify-ca' or 'verify-full') */
+  sslCaCertPath?: string;
+  /** Proxy URL (e.g. http://host:port, socks5://host:port) */
+  proxyUrl?: string;
 }
 
 /**

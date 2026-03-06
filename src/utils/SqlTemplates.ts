@@ -40,15 +40,6 @@ export class SqlTemplates {
     return sql;
   }
 
-  /**
-   * Get the version-appropriate metadata query.
-   * PG 11 uses g.oid, PG 12+ uses g.graphid.
-   */
-  getMetaData(graphName: string, pgMajorVersion: number): string {
-    const templateName = pgMajorVersion <= 11 ? 'getMetaDataLegacy' : 'getMetaData';
-    return this.get(templateName, graphName);
-  }
-
   clearCache(): void {
     this.cache.clear();
   }

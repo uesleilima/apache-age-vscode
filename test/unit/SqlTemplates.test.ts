@@ -56,26 +56,6 @@ describe('SqlTemplates', () => {
     });
   });
 
-  describe('getMetaData', () => {
-    it('should use getMetaData template for PG 12+', () => {
-      writeTemplate('getMetaData', 'SELECT * FROM meta WHERE graph = %s');
-      const result = sql.getMetaData('test_graph', 15);
-      expect(result).toBe('SELECT * FROM meta WHERE graph = test_graph');
-    });
-
-    it('should use getMetaDataLegacy template for PG 11', () => {
-      writeTemplate('getMetaDataLegacy', 'SELECT * FROM legacy_meta WHERE graph = %s');
-      const result = sql.getMetaData('test_graph', 11);
-      expect(result).toBe('SELECT * FROM legacy_meta WHERE graph = test_graph');
-    });
-
-    it('should use legacy for PG versions below 11', () => {
-      writeTemplate('getMetaDataLegacy', 'LEGACY %s');
-      const result = sql.getMetaData('g', 10);
-      expect(result).toBe('LEGACY g');
-    });
-  });
-
   describe('clearCache', () => {
     it('should clear the cache so templates are re-read', () => {
       writeTemplate('test', 'SELECT 1');
@@ -113,13 +93,7 @@ describe('SqlTemplates', () => {
     });
 
     it('should load getMetaData template with substitution', () => {
-      const template = projectSql.getMetaData('test_graph', 15);
-      expect(template).toBeTruthy();
-      expect(template).toContain('test_graph');
-    });
-
-    it('should load getMetaDataLegacy template with substitution', () => {
-      const template = projectSql.getMetaData('test_graph', 11);
+      const template = projectSql.get('getMetaData', 'test_graph');
       expect(template).toBeTruthy();
       expect(template).toContain('test_graph');
     });
