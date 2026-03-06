@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.2.0] - 2026-03-06
+
+### Added
+
+- **Managed server mode**: Skip `CREATE EXTENSION` and `LOAD 'age'` for Azure and other managed PostgreSQL instances.
+- **SSL configuration**: Per-connection SSL mode (disable / require / verify-ca / verify-full) with CA certificate file picker.
+- **Proxy support**: Connect through HTTP CONNECT or SOCKS5 proxies, configured per connection profile.
+- **Connection string import**: Paste a `postgresql://` URI to auto-fill connection details.
+
+### Changed
+
+- All enterprise settings (managed mode, SSL, proxy) are stored per-connection profile, not as global settings.
+
 ## [0.1.3] - 2026-03-05
 
 ### Fixed

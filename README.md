@@ -31,9 +31,13 @@ Write Cypher queries with syntax highlighting and snippets, execute them against
 ### Connection Management
 
 - Add, edit, and remove PostgreSQL + AGE connection profiles
+- **Connection string import** — paste a `postgresql://` URI to auto-fill all fields
 - Secure password storage using VS Code's built-in SecretStorage API
 - Connection pooling with configurable pool size and idle timeout
 - Switch between graphs on the same database
+- **Managed server mode** for Azure / managed PostgreSQL (skip `CREATE EXTENSION` / `LOAD 'age'`)
+- **SSL support** — disable, require, verify-ca, verify-full
+- **Proxy support** — HTTP CONNECT and SOCKS4/5 proxies
 
 ### Query Execution
 
@@ -70,6 +74,16 @@ Write Cypher queries with syntax highlighting and snippets, execute them against
 - **VS Code** 1.85.0 or later
 - **PostgreSQL** with [Apache AGE](https://age.apache.org/) extension installed
 - Node.js 18+ (for extension development only)
+
+### Azure Database for PostgreSQL
+
+This extension works with **Azure Database for PostgreSQL** (and other managed PostgreSQL services) where the AGE extension is pre-installed. When adding a connection:
+
+1. Set **Managed Server** to **Yes (Azure, managed)** — this skips `CREATE EXTENSION` and `LOAD 'age'` (which require elevated privileges) and only runs `SET search_path`.
+2. Set **SSL Mode** to **Require** (or higher) — Azure rejects unencrypted connections. Without SSL enabled you will see: `no pg_hba.conf entry for host ... no encryption`.
+3. You can paste a **connection string** (`postgresql://user:pass@host:5432/db?sslmode=require`) instead of typing each field manually.
+
+Schema discovery (graph listing, label browsing) uses `pg_catalog` views exclusively, so it works regardless of whether grant access to `ag_catalog` tables has been given.
 
 ### Network Access (Graph View)
 

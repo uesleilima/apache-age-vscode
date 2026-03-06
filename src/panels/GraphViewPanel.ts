@@ -18,6 +18,16 @@ export class GraphViewPanel {
   }
 
   /**
+   * Close the graph panel if it is open.
+   */
+  static close(): void {
+    if (GraphViewPanel.currentPanel) {
+      GraphViewPanel.currentPanel.panel.dispose();
+      // currentPanel is cleared by the onDidDispose callback
+    }
+  }
+
+  /**
    * Show or reuse the graph panel.
    */
   static show(extensionUri: vscode.Uri, result: QueryResult, query: string): GraphViewPanel {

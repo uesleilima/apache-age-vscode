@@ -149,27 +149,31 @@ export class ConnectionTreeProvider implements vscode.TreeDataProvider<Connectio
 
     if (!isConnected) return items;
 
-    // Available graphs
-    const availableGraphs = this.connectionManager.getAvailableGraphs();
-    const currentGraph = this.connectionManager.currentGraph;
+    // Per-connection graph state
+    const availableGraphs = this.connectionManager.getAvailableGraphs(profile.id);
+    const selectedGraph = this.connectionManager.getConnectionGraph(profile.id);
+    const isActiveConnection = profile.id === this.connectionManager.activeId;
 
     for (const graphName of availableGraphs) {
-      const isActive = graphName === currentGraph;
+      const isSelectedGraph = graphName === selectedGraph;
+      const isActiveGraph = isSelectedGraph && isActiveConnection;
       const graphItem = new ConnectionTreeItem(
         graphName,
         vscode.TreeItemCollapsibleState.None,
         profile,
         'graph',
       );
-      graphItem.iconPath = new vscode.ThemeIcon(isActive ? 'type-hierarchy-sub' : 'type-hierarchy');
-      graphItem.description = isActive ? '(active)' : '';
+      graphItem.iconPath = new vscode.ThemeIcon(isSelectedGraph ? 'type-hierarchy-sub' : 'type-hierarchy');
+      const graphDescription = isActiveGraph ? '(active)' : (isSelectedGraph ? '(selected)' : '');
+      graphItem.description = graphDescription;
       graphItem.contextValue = 'graph';
 
-      if (!isActive) {
+      // Clicking any graph that isn't the current active graph activates that connection + graph
+      if (!isActiveGraph) {
         graphItem.command = {
           command: 'apache-age.switchGraph',
           title: 'Switch to this graph',
-          arguments: [undefined, graphName],
+          arguments: [profile.id, graphName],
         };
       }
 

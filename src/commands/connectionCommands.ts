@@ -33,8 +33,10 @@ export function registerConnectionCommands(
     vscode.commands.registerCommand('apache-age.disconnect', (item: any) =>
       disconnect(connectionManager, item?.profile?.id),
     ),
-    vscode.commands.registerCommand('apache-age.switchGraph', (_idOrItem?: any, graphName?: string) =>
-      switchGraph(connectionManager, sqlTemplates, schemaExplorer, graphName),
+    vscode.commands.registerCommand('apache-age.switchGraph', (connectionIdOrItem?: any, graphName?: string) =>
+      switchGraph(connectionManager, sqlTemplates, schemaExplorer,
+        typeof connectionIdOrItem === 'string' ? connectionIdOrItem : undefined,
+        graphName),
     ),
     vscode.commands.registerCommand('apache-age.openQueryEditor', (item?: any) =>
       openQueryEditor(connectionManager, schemaExplorer, sqlTemplates, item),
@@ -85,8 +87,7 @@ async function addConnection(manager: ConnectionManager): Promise<void> {
       'Later',
     );
     if (shouldConnect === 'Connect') {
-      await manager.connect(profile.id);
-      vscode.window.showInformationMessage(`Connected to ${profile.name}`);
+      await vscode.commands.executeCommand('apache-age.connect', profile.id);
     }
   } catch (err) {
     vscode.window.showErrorMessage(`Failed to add connection: ${err}`);
@@ -102,7 +103,8 @@ async function editConnection(manager: ConnectionManager, id?: string): Promise<
   const profile = manager.getProfiles().find((p) => p.id === id);
   if (!profile) return;
 
-  const creds = await promptConnectionDetails(profile);
+  const existingPassword = await manager.getProfilePassword(id);
+  const creds = await promptConnectionDetails({ ...profile, password: existingPassword ?? '' });
   if (!creds) return;
 
   try {
@@ -116,7 +118,7 @@ async function editConnection(manager: ConnectionManager, id?: string): Promise<
       );
       if (reconnect === 'Reconnect') {
         await manager.disconnect(id);
-        await manager.connect(id);
+        await vscode.commands.executeCommand('apache-age.connect', id);
       }
     }
   } catch (err) {
@@ -173,7 +175,7 @@ async function connect(
       try {
         const repo = new SchemaRepository(pool, sqlTemplates);
         const graphs = await repo.getGraphNames();
-        manager.setAvailableGraphs(graphs.map((g) => g.name));
+        manager.setAvailableGraphs(graphs.map((g) => g.name), id);
 
         if (!manager.currentGraph && graphs.length > 0) {
           await manager.setCurrentGraph(graphs[0].name);
@@ -209,8 +211,19 @@ async function switchGraph(
   manager: ConnectionManager,
   sqlTemplates: SqlTemplates,
   schemaExplorer: SchemaExplorerProvider,
+  connectionId?: string,
   preselectedGraph?: string,
 ): Promise<void> {
+  // If a specific connection was requested, activate it first
+  if (connectionId && connectionId !== manager.activeId) {
+    try {
+      await manager.setActiveConnection(connectionId);
+    } catch {
+      vscode.window.showWarningMessage('Cannot switch to a disconnected connection.');
+      return;
+    }
+  }
+
   const pool = manager.getActivePool();
   if (!pool) {
     vscode.window.showWarningMessage('No active connection. Connect first.');
@@ -314,6 +327,7 @@ async function promptConnectionDetails(
   const password = await vscode.window.showInputBox({
     prompt: 'Password',
     password: true,
+    value: defaults?.password ?? '',
   });
   if (password === undefined) return;
 

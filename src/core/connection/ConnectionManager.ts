@@ -23,8 +23,11 @@ const CONNECTIONS_KEY = 'apache-age.connections';
 export class ConnectionManager implements vscode.Disposable {
   private readonly pools = new Map<string, ConnectionPool>();
   private activeConnectionId: string | null = null;
-  private activeGraph: string | null = null;
-  private availableGraphs: string[] = [];
+
+  /** Per-connection selected graph. */
+  private readonly connectionActiveGraph = new Map<string, string | null>();
+  /** Per-connection available graphs list. */
+  private readonly connectionGraphs = new Map<string, string[]>();
 
   private readonly _onDidChangeConnections = new vscode.EventEmitter<void>();
   readonly onDidChangeConnections = this._onDidChangeConnections.event;
@@ -96,6 +99,16 @@ export class ConnectionManager implements vscode.Disposable {
     this._onDidChangeConnections.fire();
   }
 
+  /**
+   * Retrieves the stored password for a connection profile.
+   *
+   * @param id - Profile identifier
+   * @returns The password, or undefined if not found
+   */
+  async getProfilePassword(id: string): Promise<string | undefined> {
+    return this.secretStorage.getPassword(id);
+  }
+
   async removeProfile(id: string): Promise<void> {
     // Disconnect first if active
     if (this.pools.has(id)) {
@@ -108,7 +121,6 @@ export class ConnectionManager implements vscode.Disposable {
 
     if (this.activeConnectionId === id) {
       this.activeConnectionId = null;
-      this.activeGraph = null;
       this._onDidChangeActiveConnection.fire();
     }
 
@@ -147,7 +159,11 @@ export class ConnectionManager implements vscode.Disposable {
 
     this.pools.set(id, pool);
     this.activeConnectionId = id;
-    this.activeGraph = profile.graph ?? null;
+
+    // Restore per-connection graph from profile if not already tracked
+    if (!this.connectionActiveGraph.has(id)) {
+      this.connectionActiveGraph.set(id, profile.graph ?? null);
+    }
 
     this._onDidChangeActiveConnection.fire();
     this._onDidChangeConnections.fire();
@@ -160,10 +176,12 @@ export class ConnectionManager implements vscode.Disposable {
       this.pools.delete(id);
     }
 
+    // Clean up per-connection graph state
+    this.connectionGraphs.delete(id);
+    this.connectionActiveGraph.delete(id);
+
     if (this.activeConnectionId === id) {
       this.activeConnectionId = null;
-      this.activeGraph = null;
-      this.availableGraphs = [];
       this._onDidChangeActiveConnection.fire();
     }
 
@@ -175,9 +193,9 @@ export class ConnectionManager implements vscode.Disposable {
       await pool.disconnect();
     }
     this.pools.clear();
+    this.connectionGraphs.clear();
+    this.connectionActiveGraph.clear();
     this.activeConnectionId = null;
-    this.activeGraph = null;
-    this.availableGraphs = [];
     this._onDidChangeActiveConnection.fire();
     this._onDidChangeConnections.fire();
   }
@@ -204,29 +222,65 @@ export class ConnectionManager implements vscode.Disposable {
   }
 
   get currentGraph(): string | null {
-    return this.activeGraph;
+    if (!this.activeConnectionId) return null;
+    return this.connectionActiveGraph.get(this.activeConnectionId) ?? null;
   }
 
-  /** Returns the list of available graphs for the active connection. */
-  getAvailableGraphs(): string[] {
-    return this.availableGraphs;
+  /**
+   * Returns the selected graph for a specific connection (or the active connection if no id given).
+   */
+  getConnectionGraph(id?: string): string | null {
+    const connectionId = id ?? this.activeConnectionId;
+    if (!connectionId) return null;
+    return this.connectionActiveGraph.get(connectionId) ?? null;
   }
 
-  /** Updates the list of available graphs and notifies listeners. */
-  setAvailableGraphs(graphs: string[]): void {
-    this.availableGraphs = graphs;
+  /** Returns the list of available graphs for a specific connection (or the active connection). */
+  getAvailableGraphs(id?: string): string[] {
+    const connectionId = id ?? this.activeConnectionId;
+    if (!connectionId) return [];
+    return this.connectionGraphs.get(connectionId) ?? [];
+  }
+
+  /** Updates the list of available graphs for a specific connection (or the active connection). */
+  setAvailableGraphs(graphs: string[], id?: string): void {
+    const connectionId = id ?? this.activeConnectionId;
+    if (!connectionId) return;
+    this.connectionGraphs.set(connectionId, graphs);
     this._onDidChangeConnections.fire();
   }
 
-  async setCurrentGraph(graph: string): Promise<void> {
-    this.activeGraph = graph;
+  async setCurrentGraph(graph: string, id?: string): Promise<void> {
+    const connectionId = id ?? this.activeConnectionId;
+    if (!connectionId) return;
+    this.connectionActiveGraph.set(connectionId, graph);
 
     // Also persist the graph selection to the profile
-    if (this.activeConnectionId) {
-      await this.updateProfile(this.activeConnectionId, { graph });
-    }
+    await this.updateProfile(connectionId, { graph });
 
+    // Only notify active connection change if it affects the active connection
+    if (connectionId === this.activeConnectionId) {
+      this._onDidChangeActiveConnection.fire();
+    }
+  }
+
+  /**
+   * Switch which connected pool is the active one (for queries and schema).
+   * The connection must already be open.
+   */
+  async setActiveConnection(id: string): Promise<void> {
+    if (!this.pools.has(id)) {
+      throw new Error('Cannot activate a connection that is not open');
+    }
+    if (this.activeConnectionId === id) return;
+    this.activeConnectionId = id;
     this._onDidChangeActiveConnection.fire();
+    this._onDidChangeConnections.fire();
+  }
+
+  /** Returns the connection pool for a specific connection id. */
+  getPool(id: string): ConnectionPool | null {
+    return this.pools.get(id) ?? null;
   }
 
   getServerVersion(id: string): string | null {

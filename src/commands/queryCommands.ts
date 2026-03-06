@@ -92,6 +92,9 @@ async function executeAndShow(
           if (proceed !== 'Show') return;
         }
         GraphViewPanel.show(context.extensionUri, result, query);
+      } else {
+        // No graph elements — close stale graph panel if open
+        GraphViewPanel.close();
       }
     }
 
