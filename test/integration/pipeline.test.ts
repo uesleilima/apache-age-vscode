@@ -89,7 +89,7 @@ describe('CypherQueryWrapper → full pipeline', () => {
 
     expect(sql).toContain("FROM cypher('social_graph'");
     expect(sql).toContain('$$ MATCH (a)-[r:KNOWS]->(b) RETURN a, r, b $$');
-    expect(sql).toContain('a agtype, r agtype, b agtype');
+    expect(sql).toContain('"a" agtype, "r" agtype, "b" agtype');
   });
 
   it('should handle a CREATE query (no RETURN) wrapped in SQL', () => {
@@ -97,14 +97,14 @@ describe('CypherQueryWrapper → full pipeline', () => {
     const sql = CypherQueryWrapper.wrap(cypher, 'social_graph');
 
     expect(sql).toContain("FROM cypher('social_graph'");
-    expect(sql).toContain('result agtype');
+    expect(sql).toContain('"result" agtype');
   });
 
   it('should handle RETURN with aggregation and alias', () => {
     const cypher = 'MATCH (n:Person) RETURN n.name AS name, count(n) AS total ORDER BY total DESC LIMIT 10';
     const sql = CypherQueryWrapper.wrap(cypher, 'g');
 
-    expect(sql).toContain('name agtype, total agtype');
+    expect(sql).toContain('"name" agtype, "total" agtype');
   });
 });
 

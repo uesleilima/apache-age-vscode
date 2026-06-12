@@ -49,7 +49,7 @@ export class CypherQueryWrapper {
     // Extract return column aliases for the AS clause
     const columns = this.extractReturnColumns(trimmed);
     const asCols = columns.length > 0
-      ? columns.map((c) => `${c} agtype`).join(', ')
+      ? columns.map((c) => `"${c}" agtype`).join(', ')
       : 'result agtype';
 
     return `SELECT * FROM cypher('${this.escapeGraphName(graphName)}', $$ ${trimmed} $$) as (${asCols});`;
@@ -59,10 +59,11 @@ export class CypherQueryWrapper {
    * Parse RETURN clause to extract column aliases.
    *
    * Examples:
-   *   "MATCH (n) RETURN n"                     → ["n"]
-   *   "MATCH (a)-[r]->(b) RETURN a, r, b"      → ["a", "r", "b"]
+   *   "MATCH (n) RETURN n"                      → ["n"]
+   *   "MATCH (a)-[r]->(b) RETURN a, r, b"       → ["a", "r", "b"]
    *   "MATCH (n) RETURN n.name AS name"         → ["name"]
    *   "MATCH (n) RETURN count(n) AS total"      → ["total"]
+   *   "MATCH (n) RETURN count(n)"               → ["count(n)"]
    *   "MATCH (n) RETURN *"                      → ["result"]
    */
   static extractReturnColumns(cypher: string): string[] {
@@ -90,23 +91,7 @@ export class CypherQueryWrapper {
         continue;
       }
 
-      // Use the expression itself as the column name
-      // For simple identifiers like n, r, b
-      const simpleIdent = trimmedPart.match(/^(\w+)$/);
-      if (simpleIdent) {
-        columns.push(simpleIdent[1]);
-        continue;
-      }
-
-      // For property access like n.name
-      const propAccess = trimmedPart.match(/^(\w+)\.(\w+)$/);
-      if (propAccess) {
-        columns.push(propAccess[2]);
-        continue;
-      }
-
-      // Fallback: generate a column name
-      columns.push(`col${columns.length + 1}`);
+      columns.push(trimmedPart)
     }
 
     return columns.length > 0 ? columns : ['result'];
