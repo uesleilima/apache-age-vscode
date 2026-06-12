@@ -25,7 +25,7 @@ describe('QueryExecutor', () => {
       const result = await executor.execute('MATCH (n) RETURN n', 'test_graph');
 
       expect(mockPool.query).toHaveBeenCalledWith(
-        "SELECT * FROM cypher('test_graph', $$ MATCH (n) RETURN n $$) as (n agtype);"
+        "SELECT * FROM cypher('test_graph', $$ MATCH (n) RETURN n $$) as (\"n\" agtype);"
       );
       expect(result.rows).toHaveLength(1);
       expect(result.columns).toEqual(['n']);
@@ -34,7 +34,7 @@ describe('QueryExecutor', () => {
     });
 
     it('should pass through already-wrapped SQL', async () => {
-      const sql = "SELECT * FROM cypher('g', $$ MATCH (n) RETURN n $$) as (n agtype)";
+      const sql = "SELECT * FROM cypher('g', $$ MATCH (n) RETURN n $$) as (\"n\" agtype)";
       await executor.execute(sql, 'test_graph');
       expect(mockPool.query).toHaveBeenCalledWith(sql);
     });

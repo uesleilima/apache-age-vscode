@@ -10,34 +10,34 @@ describe('CypherQueryWrapper', () => {
     it('should wrap a simple MATCH/RETURN query', () => {
       const sql = CypherQueryWrapper.wrap('MATCH (n) RETURN n', GRAPH);
       expect(sql).toBe(
-        "SELECT * FROM cypher('test_graph', $$ MATCH (n) RETURN n $$) as (n agtype);"
+        "SELECT * FROM cypher('test_graph', $$ MATCH (n) RETURN n $$) as (\"n\" agtype);"
       );
     });
 
     it('should wrap a query with multiple return columns', () => {
       const sql = CypherQueryWrapper.wrap('MATCH (a)-[r]->(b) RETURN a, r, b', GRAPH);
       expect(sql).toBe(
-        "SELECT * FROM cypher('test_graph', $$ MATCH (a)-[r]->(b) RETURN a, r, b $$) as (a agtype, r agtype, b agtype);"
+        "SELECT * FROM cypher('test_graph', $$ MATCH (a)-[r]->(b) RETURN a, r, b $$) as (\"a\" agtype, \"r\" agtype, \"b\" agtype);"
       );
     });
 
     it('should use "result" column for RETURN *', () => {
       const sql = CypherQueryWrapper.wrap('MATCH (n) RETURN *', GRAPH);
       expect(sql).toBe(
-        "SELECT * FROM cypher('test_graph', $$ MATCH (n) RETURN * $$) as (result agtype);"
+        "SELECT * FROM cypher('test_graph', $$ MATCH (n) RETURN * $$) as (\"result\" agtype);"
       );
     });
 
     it('should trim whitespace from the query', () => {
       const sql = CypherQueryWrapper.wrap('  MATCH (n) RETURN n  ', GRAPH);
       expect(sql).toBe(
-        "SELECT * FROM cypher('test_graph', $$ MATCH (n) RETURN n $$) as (n agtype);"
+        "SELECT * FROM cypher('test_graph', $$ MATCH (n) RETURN n $$) as (\"n\" agtype);"
       );
     });
 
     it('should use "result" column when no RETURN clause exists', () => {
       const sql = CypherQueryWrapper.wrap("CREATE (n:Person {name: 'Alice'})", GRAPH);
-      expect(sql).toContain('as (result agtype)');
+      expect(sql).toContain('as (\"result\" agtype)');
     });
   });
 
@@ -45,7 +45,7 @@ describe('CypherQueryWrapper', () => {
 
   describe('passthrough', () => {
     it('should pass through already-wrapped queries', () => {
-      const wrapped = "SELECT * FROM cypher('g', $$ MATCH (n) RETURN n $$) as (n agtype)";
+      const wrapped = "SELECT * FROM cypher('g', $$ MATCH (n) RETURN n $$) as (\"n\" agtype)";
       expect(CypherQueryWrapper.wrap(wrapped, GRAPH)).toBe(wrapped);
     });
 
@@ -127,7 +127,7 @@ describe('CypherQueryWrapper', () => {
     it('should handle property access without alias', () => {
       expect(
         CypherQueryWrapper.extractReturnColumns('MATCH (n) RETURN n.name')
-      ).toEqual(['name']);
+      ).toEqual(['n.name']);
     });
 
     it('should return ["result"] when no RETURN clause exists', () => {
@@ -160,9 +160,9 @@ describe('CypherQueryWrapper', () => {
 
     it('should generate fallback column names for complex expressions', () => {
       // Function call without AS alias → fallback
-      const cols = CypherQueryWrapper.extractReturnColumns('MATCH (n) RETURN count(n)');
-      expect(cols).toHaveLength(1);
-      expect(cols[0]).toMatch(/^col\d+$/);
+      expect(
+        CypherQueryWrapper.extractReturnColumns('MATCH (n) RETURN count(n)')
+      ).toEqual(['count(n)']);
     });
   });
 
