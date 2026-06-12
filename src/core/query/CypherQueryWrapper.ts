@@ -68,7 +68,7 @@ export class CypherQueryWrapper {
    */
   static extractReturnColumns(cypher: string): string[] {
     // Find the last RETURN clause (could be multiple in UNION queries)
-    const returnMatch = cypher.match(/\bRETURN\b\s+([\s\S]*?)(?:\bORDER\b|\bSKIP\b|\bLIMIT\b|\bUNION\b|;?\s*$)/i);
+    const returnMatch = cypher.match(/\bRETURN\b\s+(?:(?:\bDISTINCT\b|\bALL\b)\s+)?([\s\S]*?)(?:\bORDER\b|\bSKIP\b|\bLIMIT\b|\bUNION\b|;?\s*$)/i);
     if (!returnMatch) return ['result'];
 
     const returnClause = returnMatch[1].trim();
